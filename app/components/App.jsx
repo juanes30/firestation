@@ -130,6 +130,7 @@ export default class App extends Component {
       setCurrentDb: this.setCurrentDb,
       startFirebaseForDb: this.startFirebaseForDb,
       store: this.props.store,
+      firestoreEnabled: this.props.store.firestoreEnabled,
       updateSavedQueries: this.updateSavedQueries
     };
 

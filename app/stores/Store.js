@@ -5,6 +5,7 @@ import FirebaseService from "../service/FirebaseService";
 class Store {
   @observable databases = CacheHelper.getFromLocalStore("databases");
   databases = this.databases ? this.databases : [];
+  @observable firestoreEnabled = false;
   @observable
   currentDatabase = CacheHelper.getFromLocalStore("currentDatabase");
   @observable rootKeys = null;
@@ -16,6 +17,8 @@ class Store {
   @observable
   queryHistoryByDb = CacheHelper.getFromLocalStore("queryHistoryByDb");
   @observable firebaseListeners = [];
+
+
 
   //Modals
   @observable newDb = { data: null };

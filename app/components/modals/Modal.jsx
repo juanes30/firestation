@@ -5,7 +5,7 @@ import SaveQuery from "./SaveQuery";
 import fs from "fs";
 const { dialog, app } = require("electron").remote;
 
-const Modal = ({ store, currentDatabase, createDb }) => {
+const Modal = ({ store, currentDatabase, createDb, firestoreEnabled }) => {
   let serviceAccount = store.modal.includes("service") ? true : false;
 
   const handleFile = () => {
@@ -46,11 +46,13 @@ const Modal = ({ store, currentDatabase, createDb }) => {
         {store.modal.includes("config") &&
           <DatabaseConfig
             store={store}
+            firestoreEnabled={firestoreEnabled}
             closeModal={closeModal}
             handleFile={handleFile}
             serviceAccount={serviceAccount}
             currentDatabase={currentDatabase}
-          />}
+          />
+          }
         {store.modal.includes("newDB") &&
           <AddDatabase
             store={store}
