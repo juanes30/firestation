@@ -76,6 +76,7 @@ export default class App extends Component {
   };
 
   commit = () => {
+    this.props.store.focus = true; //refocus text after commit click
     this.killFirebaseListeners();
     if (!this.props.store.commitQuery || !this.props.store.currentDatabase) {
       return;
