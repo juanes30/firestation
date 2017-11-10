@@ -46,9 +46,7 @@ export default class Workbook extends Component {
     ];
 
     let selectedTextChange = (newValue, e) => {
-      store.selectedText = newValue;
-      console.log("e:", e);
-      console.log("selectedText:", newValue);
+      store.selectedText = this.refs.code.editor.getSelectedText();
     };
 
     return (
@@ -72,6 +70,7 @@ export default class Workbook extends Component {
           name="UNIQUE_ID_OF_DIV"
           commands={commands}
           editorProps={{ $blockScrolling: true }}
+          onSelectionChange={selectedTextChange}
         />
       </div>
     );
