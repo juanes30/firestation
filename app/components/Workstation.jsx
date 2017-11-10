@@ -24,7 +24,8 @@ export default class Workstation extends Component {
   }
 
   execute = () => {
-    let selectedText = this.getSelectionText();
+    this.props.store.focus = true; //refocus after execute
+    let selectedText = this.props.store.selectedText;
     let query = this.props.store.query;
     if (selectedText && query.includes(selectedText)) {
       query = selectedText;
@@ -42,25 +43,6 @@ export default class Workstation extends Component {
 
   toggleSavedQueries = () => {
     this.setState({ savedQueriesIsOpen: !this.state.savedQueriesIsOpen });
-  };
-
-  getSelectionText = () => {
-    var text = "";
-    var activeEl = document.activeElement;
-    var activeElTagName = activeEl ? activeEl.tagName.toLowerCase() : null;
-    if (
-      activeElTagName == "textarea" &&
-      typeof activeEl.selectionStart == "number"
-    ) {
-      text = activeEl.value.slice(
-        activeEl.selectionStart,
-        activeEl.selectionEnd
-      );
-    } else if (window.getSelection) {
-      text = window.getSelection().toString();
-    }
-
-    return this.props.store.selectedText;
   };
 
   setWorkstationState = (key, val) => {
