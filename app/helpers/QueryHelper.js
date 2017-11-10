@@ -51,13 +51,15 @@ export default class QueryHelper {
   static executeInsert(query, db, callback, commitResults) {
     const collection = this.getCollection(query, INSERT_STATEMENT);
     const that = this;
-    const insertObjects = this.getObjectsFromInsert(query);
     const insertCount = this.getInsertCount(query);
     const path = collection + "/";
+    const insertObjects = this.getObjectsFromInsert(query);
+    debugger;
     if (commitResults) {
+      let keys = insertObjects && Object.keys(insertObjects);
       for (let i = 1; i < insertCount; i++) {
         //insert clones
-        UpdateService.pushObject(db, path, insertObjects[0]);
+        UpdateService.pushObject(db, path, insertObjects[keys[0]]);
       }
       for (let key in insertObjects) {
         UpdateService.pushObject(db, path, insertObjects[key]);
@@ -632,7 +634,8 @@ export default class QueryHelper {
   }
 
   static getInsertCount(query) {
-    const splitQ = query.split(" ");
+    debugger;
+    const splitQ = query.trim().split(" ");
     if (splitQ[0].toUpperCase() === "INSERT" && parseInt(splitQ[1]) > 1) {
       return parseInt(splitQ[1]);
     }
