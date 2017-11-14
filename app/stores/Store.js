@@ -18,8 +18,6 @@ class Store {
   queryHistoryByDb = CacheHelper.getFromLocalStore("queryHistoryByDb");
   @observable firebaseListeners = [];
 
-
-
   //Modals
   @observable newDb = { data: null };
 

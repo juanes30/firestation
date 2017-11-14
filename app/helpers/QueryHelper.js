@@ -53,25 +53,25 @@ export default class QueryHelper {
     const that = this;
     const insertCount = this.getInsertCount(query);
     const path = collection + "/";
-    const insertObjects = this.getObjectsFromInsert(query);
-    debugger;
-    if (commitResults) {
-      let keys = insertObjects && Object.keys(insertObjects);
-      for (let i = 1; i < insertCount; i++) {
-        //insert clones
-        UpdateService.pushObject(db, path, insertObjects[keys[0]]);
+    this.getObjectsFromInsert(query, db, insertObjects => {
+      if (commitResults) {
+        let keys = insertObjects && Object.keys(insertObjects);
+        for (let i = 1; i < insertCount; i++) {
+          //insert clones
+          UpdateService.pushObject(db, path, insertObjects[keys[0]]);
+        }
+        for (let key in insertObjects) {
+          UpdateService.pushObject(db, path, insertObjects[key]);
+        }
       }
-      for (let key in insertObjects) {
-        UpdateService.pushObject(db, path, insertObjects[key]);
-      }
-    }
-    let results = {
-      insertCount: insertCount,
-      statementType: INSERT_STATEMENT,
-      payload: insertObjects,
-      path: path
-    };
-    callback(results);
+      let results = {
+        insertCount: insertCount,
+        statementType: INSERT_STATEMENT,
+        payload: insertObjects,
+        path: path
+      };
+      callback(results);
+    });
   }
 
   static executeDelete(query, db, callback, commitResults) {
@@ -455,32 +455,57 @@ export default class QueryHelper {
     return selectedFields;
   }
 
-  static getObjectsFromInsert(query) {
-    let valuesStr = query.match(/(values).+\);/)[0];
-    let keysStr = query.substring(query.indexOf("(") + 1, query.indexOf(")"));
-    let keys = keysStr.split(",");
-    let valuesStrArr = valuesStr.split("(");
-    valuesStrArr.shift(); //removes "values ("
-    let valuesArr = valuesStrArr.map(valueStr => {
-      return valueStr.substring(0, valueStr.indexOf(")")).split(",");
-    });
+  static getObjectsFromInsert(query, db, callback) {
+    //insert based on select data
+    if (/^(insert into )[^s]+( select).+/i.test(query)) {
+      const queryUpper = query.toUpperCase();
+      const that = this;
+      const selectStatement = query
+        .substring(queryUpper.indexOf("SELECT "))
+        .trim();
+      const selectedFields = this.getSelectedFields(selectStatement);
+      const collection = this.getCollection(selectStatement, SELECT_STATEMENT);
 
-    if (!keys || !valuesArr) {
-      throw "Badly formatted insert statement";
-    }
-
-    let insertObjects = {};
-    valuesArr.forEach((values, i) => {
-      let insertObject = {};
-      keys.forEach((key, i) => {
-        insertObject[
-          StringHelper.getParsedValue(key.trim())
-        ] = StringHelper.getParsedValue(values[i].trim());
+      this.getWheres(selectStatement, db, wheres => {
+        this.getDataForSelect(
+          db,
+          collection,
+          selectedFields,
+          wheres,
+          null,
+          selectData => {
+            return callback(selectData.payload);
+          }
+        );
       });
-      insertObjects["pushId_" + i] = insertObject;
-    });
+    } else {
+      //traditional insert
+      let valuesStr = query.match(/(values).+\);/)[0];
+      let keysStr = query.substring(query.indexOf("(") + 1, query.indexOf(")"));
+      let keys = keysStr.split(",");
+      let valuesStrArr = valuesStr.split("(");
+      valuesStrArr.shift(); //removes "values ("
+      let valuesArr = valuesStrArr.map(valueStr => {
+        return valueStr.substring(0, valueStr.indexOf(")")).split(",");
+      });
 
-    return insertObjects;
+      if (!keys || !valuesArr) {
+        throw "Badly formatted insert statement";
+      }
+
+      let insertObjects = {};
+      valuesArr.forEach((values, i) => {
+        let insertObject = {};
+        keys.forEach((key, i) => {
+          insertObject[
+            StringHelper.getParsedValue(key.trim())
+          ] = StringHelper.getParsedValue(values[i].trim());
+        });
+        insertObjects["pushId_" + i] = insertObject;
+      });
+
+      return callback(insertObjects);
+    }
   }
 
   static removeNonSelectedFieldsFromResults(results, selectedFields) {
@@ -634,7 +659,6 @@ export default class QueryHelper {
   }
 
   static getInsertCount(query) {
-    debugger;
     const splitQ = query.trim().split(" ");
     if (splitQ[0].toUpperCase() === "INSERT" && parseInt(splitQ[1]) > 1) {
       return parseInt(splitQ[1]);
