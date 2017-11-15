@@ -54,10 +54,14 @@ export default class StringHelper {
       return stringVal === "true";
     } else if (stringVal === "null") {
       return null;
+    } else if (Object.keys(SQL_FUNCTIONS).includes(stringVal.toLowerCase())) {
+      return SQL_FUNCTIONS[stringVal.toLowerCase()]();
     } else if (quotesMandatory) {
       stringVal = stringVal.trim();
       if (stringVal.match(/^["|'].+["|']$/)) {
         return stringVal.replace(/["']/g, "");
+      } else if (this.isMath(stringVal)){
+        return this.executeFunction(stringVal)
       } else {
         return {
           FIRESTATION_DATA_PROP: stringVal
@@ -68,4 +72,18 @@ export default class StringHelper {
       return stringVal.replace(/["']/g, "");
     }
   }
+
+  static isMath(stringVal) { //TODO:
+    return false;
+  }
+
+  static executeFunction(stringVal) { TODO:
+    return null;
+  }
+
 }
+
+
+const SQL_FUNCTIONS = {
+  "rand()": () => Math.random()
+};

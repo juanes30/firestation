@@ -221,6 +221,7 @@ export default class QueryHelper {
         typeof thisSet === "object" &&
         thisSet.hasOwnProperty(FIRESTATION_DATA_PROP)
       ) {
+        //execute equation
         const newVal = thisSet.FIRESTATION_DATA_PROP;
         for (let i = 0; i < EQUATION_IDENTIFIERS.length; i++) {
           if (newVal.includes(EQUATION_IDENTIFIERS[i])) {
@@ -480,28 +481,30 @@ export default class QueryHelper {
       });
     } else {
       //traditional insert
-      let valuesStr = query.match(/(values).+\);/)[0];
       let keysStr = query.substring(query.indexOf("(") + 1, query.indexOf(")"));
       let keys = keysStr.split(",");
-      let valuesStrArr = valuesStr.split("(");
+      
+      let valuesStr = query.match(/(values).+\);/)[0];
+      let valuesStrArr = valuesStr.split(/[\(](?!\))/); //splits on "(", unless its a function "func()"
       valuesStrArr.shift(); //removes "values ("
+      debugger;
       let valuesArr = valuesStrArr.map(valueStr => {
-        return valueStr.substring(0, valueStr.indexOf(")")).split(",");
+        return valueStr.substring(0, valueStr.lastIndexOf(")")).split(",");
       });
-
       if (!keys || !valuesArr) {
         throw "Badly formatted insert statement";
       }
-
+debugger;
       let insertObjects = {};
-      valuesArr.forEach((values, i) => {
+      valuesArr.forEach((values, valuesIndex) => {
         let insertObject = {};
-        keys.forEach((key, i) => {
+        debugger;
+        keys.forEach((key, keyIndex) => {
           insertObject[
             StringHelper.getParsedValue(key.trim())
-          ] = StringHelper.getParsedValue(values[i].trim());
+          ] = StringHelper.getParsedValue(values[keyIndex].trim());
         });
-        insertObjects["pushId_" + i] = insertObject;
+        insertObjects["pushId_" + valuesIndex] = insertObject;
       });
 
       return callback(insertObjects);
