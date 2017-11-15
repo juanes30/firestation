@@ -122,7 +122,7 @@ export default class ObjectNode extends React.Component {
             effect="solid"
             place="top"
           >
-            {opened ? <span>Collapse</span> : <span>Expand</span>} Data
+            {opened ? "Collapse Data" : "Expand Data"}
           </ReactTooltip>
           {clevel !== 1 &&
             that.props.creationPath === fbPath &&
@@ -288,8 +288,11 @@ export default class ObjectNode extends React.Component {
     const pathUnderEdit = this.props.pathUnderEdit;
     let keyChangeConfirmed = false;
     const keyConfirmationMsg =
-    "This will permanently move all child data.\n Data location: " +
-    pathUnderEdit + " ---> "+path+newValue;
+      "This will permanently move all child data.\n Data location: " +
+      pathUnderEdit +
+      " ---> " +
+      path +
+      newValue;
     if (pathUnderEdit && this.state.keyEdit && confirm(keyConfirmationMsg)) {
       keyChangeConfirmed = true;
       let newObject = this.props.value;
@@ -298,7 +301,6 @@ export default class ObjectNode extends React.Component {
       delete newObject[oldKey];
       newValue = newObject;
     }
-
 
     if (!this.state.keyEdit || keyChangeConfirmed) {
       UpdateService.set(db, path, newValue);

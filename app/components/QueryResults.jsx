@@ -15,7 +15,7 @@ const QueryResults = props => {
           {renderResultsTitle(props.payloadSize, store.results)}
         </h4>
         <ReactTooltip id="expandTooltip" type="dark" effect="solid" place="top">
-          {props.resultsOpen ? "Collapse results" : "Expand results"}
+          {props.resultsOpen ? "Collapse Results" : "Expand Results"}
         </ReactTooltip>
         <i
           data-tip
@@ -48,7 +48,8 @@ const renderResultsTitle = (payloadSize, results) => {
         </span>
       );
     case "INSERT_STATEMENT":
-      let numInserted = results.insertCount > 1 ? " (" + results.insertCount + "): " : ": ";
+      let numInserted =
+        results.insertCount > 1 ? " (" + results.insertCount + "): " : ": ";
       return "Inserted Records" + numInserted;
     case "DELETE_STATEMENT":
       return (
