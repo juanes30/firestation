@@ -17,7 +17,7 @@ export default class App extends Component {
     if (!currentDatabase) {
       return;
     }
-    this.killFirebaseListeners();
+    this.props.store.killListeners();
     FirebaseService.startFirebaseApp(currentDatabase);
     this.props.store.setCurrentDatabase(currentDatabase);
     // QueryHelper.getRootKeysPromise(currentDatabase).then(rootKeys => {
@@ -49,35 +49,36 @@ export default class App extends Component {
   };
 
   executeQuery = query => {
-    this.killFirebaseListeners();
+    this.props.store.killListeners();
     query = QueryHelper.formatAndCleanQuery(query);
     this.props.store.addQueryToHistory(query);
     this.props.store.executingQuery = true;
-    try {
-      QueryHelper.executeQuery(
-        query,
-        this.props.store.currentDatabase,
-        results => {
-          this.props.store.executingQuery = false;
-          if (results && results.queryType != "SELECT_STATEMENT") {
-            this.props.store.commitQuery = query;
-            this.props.store.results = results;
-            this.props.store.firebaseListeners.push(results.firebaseListener);
-          } else {
-            this.props.store.results = results;
-            this.props.store.firebaseListeners.push(results.firebaseListener);
-          }
+    // try {
+    QueryHelper.executeQuery(
+      query,
+      this.props.store.currentDatabase,
+      results => {
+        this.props.store.executingQuery = false;
+        if (results && results.queryType != "SELECT_STATEMENT") {
+          this.props.store.commitQuery = query;
+          this.props.store.results = results;
+          this.props.store.firebaseListeners.push(results.firebaseListener);
+        } else {
+          this.props.store.results = results;
+          this.props.store.firebaseListeners.push(results.firebaseListener);
         }
-      );
-    } catch (error) {
-      this.props.store.results = { error };
-      this.props.store.executingQuery = false;
-    }
+      }
+    );
+    // }
+    // catch (error) {
+    //   this.props.store.results = { error };
+    //   this.props.store.executingQuery = false;
+    // }
   };
 
   commit = () => {
     this.props.store.focus = true; //refocus text after commit click
-    this.killFirebaseListeners();
+    this.props.store.killListeners();
     if (!this.props.store.commitQuery || !this.props.store.currentDatabase) {
       return;
     }
@@ -88,22 +89,17 @@ export default class App extends Component {
         query,
         this.props.store.currentDatabase,
         results => {
-          this.props.store.firebaseListeners.push(results.firebaseListener);
-          this.killFirebaseListeners();
+          this.props.store.addNewListener(results.firebaseListener);
+          this.props.store.killListeners();
           this.props.store.clearResults();
         },
         true
       );
     } catch (error) {
+      debugger;
+      console.log(error);
       this.props.store.results = { error };
     }
-  };
-
-  killFirebaseListeners = () => {
-    this.props.store.firebaseListeners.forEach(ref => {
-      ref && ref.off("value");
-    });
-    this.props.store.firebaseListeners = [];
   };
 
   cancelCommit = () => {

@@ -36,6 +36,15 @@ export default class StringHelper {
     return lastIndexOf;
   }
 
+  static determineStringIsLike(val1, val2) {
+    //TODO: LIKE fails on reserved regex characters (., +, etc)
+    let regex = StringHelper.replaceAll(val2, "%", ".*");
+    regex = StringHelper.replaceAll(regex, "_", ".{1}");
+    // regex= StringHelper.replaceAll(regex,'\+','\+');
+    let re = new RegExp("^" + regex + "$", "g");
+    return re.test(val1);
+  }
+
   static getJsxWithNewLines(text) {
     return text.split("\n").map(function(item, key) {
       return (
@@ -60,8 +69,8 @@ export default class StringHelper {
       stringVal = stringVal.trim();
       if (stringVal.match(/^["|'].+["|']$/)) {
         return stringVal.replace(/["']/g, "");
-      } else if (this.isMath(stringVal)){
-        return this.executeFunction(stringVal)
+      } else if (this.isMath(stringVal)) {
+        return this.executeFunction(stringVal);
       } else {
         return {
           FIRESTATION_DATA_PROP: stringVal
@@ -73,16 +82,15 @@ export default class StringHelper {
     }
   }
 
-  static isMath(stringVal) { //TODO:
+  static isMath(stringVal) {
+    //TODO:
     return false;
   }
 
-  static executeFunction(stringVal) { TODO:
-    return null;
+  static executeFunction(stringVal) {
+    TODO: return null;
   }
-
 }
-
 
 const SQL_FUNCTIONS = {
   "rand()": () => Math.random()

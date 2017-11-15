@@ -86,7 +86,10 @@ export default class Workstation extends Component {
         />
         <div className="workArea col-md-12">
           <h1 className="workstation-dbTitle">
-          {store.currentDatabase.title} {store.firestoreEnabled?"(Cloud Firestore)":""}
+            {store.currentDatabase.title}{" "}
+            {store.firestoreEnabled
+              ? "- Cloud Firestore"
+              : "- Realtime Database"}
           </h1>
           {/*{store.rootKeys &&
           <div>Root Keys: <ObjectTree value={store.rootKeys} 

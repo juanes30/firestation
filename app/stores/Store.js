@@ -17,6 +17,7 @@ class Store {
   @observable
   queryHistoryByDb = CacheHelper.getFromLocalStore("queryHistoryByDb");
   @observable firebaseListeners = [];
+  @observable firestoreListeners = [];
 
   //Modals
   @observable newDb = { data: null };
@@ -84,9 +85,29 @@ class Store {
     this.results = null;
   }
 
+  addNewListener = listener => {
+    this[
+      this.currentDatabase.firestoreEnabled
+        ? this.firestoreListeners
+        : this.firebaseListeners
+    ].push(listener);
+  };
+
+  killListeners() {
+    this.firebaseListeners.forEach(ref => {
+      ref && ref.off("value");
+    });
+    this.firestoreListeners.forEach(unsubscribe => {
+      unsubscribe && unsubscribe();
+    });
+    this.firebaseListeners = [];
+    this.firestoreListeners = [];
+  }
+
   setCurrentDatabase(database) {
     this.currentDatabase = database;
     this.queryHistoryIsOpen = false;
+    this.firestoreEnabled = database.firestoreEnabled;
     this.query = "";
     this.clearResults();
     CacheHelper.updateLocalStore("currentDatabase", database);
@@ -97,6 +118,7 @@ class Store {
     if (err) {
       return err;
     }
+    database.firestoreEnabled = false;
     let databases = this.databases;
     this.databases.push(database);
     this.currentDatabase = database;

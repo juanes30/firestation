@@ -1,5 +1,7 @@
 import StringHelper from "./StringHelper";
 import UpdateService from "../service/UpdateService";
+import SelectService from "../service/SelectService";
+
 import FirebaseService from "../service/FirebaseService";
 import { isValidDate, executeDateComparison } from "../helpers/DateHelper";
 const NO_EQUALITY_STATEMENTS = "NO_EQUALITY_STATEMENTS";
@@ -26,9 +28,13 @@ export default class QueryHelper {
 
   static executeQuery(query, database, callback, commitResults) {
     let app = FirebaseService.startFirebaseApp(database);
-    let db = app.database();
+    let db = app[database.firestoreEnabled ? "firestore" : "database"]();
+
+    //maybe delete these two lines, but i think it may do something important..
+    //cant remember.. >.<, all listeners should already be killed on App.executeQuery()
     let ref = db.ref("/");
     ref.off("value");
+
     const statementType = this.determineQueryType(query);
     if (statementType === SELECT_STATEMENT) {
       this.executeSelect(query, db, callback);
@@ -78,21 +84,28 @@ export default class QueryHelper {
     const collection = this.getCollection(query, DELETE_STATEMENT);
     const that = this;
     this.getWheres(query, db, wheres => {
-      this.getDataForSelect(db, collection, null, wheres, null, dataToAlter => {
-        if (dataToAlter && commitResults) {
-          Object.keys(dataToAlter.payload).forEach(function(objKey, index) {
-            const path = collection + "/" + objKey;
-            UpdateService.deleteObject(db, path);
-          });
+      SelectService.getDataForSelect(
+        db,
+        collection,
+        null,
+        wheres,
+        null,
+        dataToAlter => {
+          if (dataToAlter && commitResults) {
+            Object.keys(dataToAlter.payload).forEach(function(objKey, index) {
+              const path = collection + "/" + objKey;
+              UpdateService.deleteObject(db, path);
+            });
+          }
+          let results = {
+            statementType: DELETE_STATEMENT,
+            payload: dataToAlter.payload,
+            firebaseListener: dataToAlter.firebaseListener,
+            path: collection
+          };
+          callback(results);
         }
-        let results = {
-          statementType: DELETE_STATEMENT,
-          payload: dataToAlter.payload,
-          firebaseListener: dataToAlter.firebaseListener,
-          path: collection
-        };
-        callback(results);
-      });
+      );
     });
   }
 
@@ -101,7 +114,7 @@ export default class QueryHelper {
     const orderBys = this.getOrderBys(query);
     const selectedFields = this.getSelectedFields(query);
     this.getWheres(query, db, wheres => {
-      this.getDataForSelect(
+      SelectService.getDataForSelect(
         db,
         collection,
         selectedFields,
@@ -120,96 +133,36 @@ export default class QueryHelper {
     }
     const that = this;
     this.getWheres(query, db, wheres => {
-      this.getDataForSelect(db, collection, null, wheres, null, dataToAlter => {
-        let data = dataToAlter.payload;
-        Object.keys(data).forEach(function(objKey, index) {
-          that.updateItemWithSets(data[objKey], sets);
-          const path = collection + "/" + objKey;
-          if (commitResults) {
-            UpdateService.updateFields(
-              db,
-              path,
-              data[objKey],
-              Object.keys(sets)
-            );
-          }
-        });
-        let results = {
-          statementType: UPDATE_STATEMENT,
-          payload: data,
-          firebaseListener: dataToAlter.firebaseListener,
-          path: collection
-        };
-        callback(results);
-      });
-    });
-  }
-
-  static getDataForSelect(
-    db,
-    collection,
-    selectedFields,
-    wheres,
-    orderBys,
-    callback
-  ) {
-    console.log(
-      "getData (collection, selectedFields, wheres):",
-      collection,
-      selectedFields,
-      wheres
-    );
-    var ref = db.ref(collection);
-    let results = {
-      queryType: SELECT_STATEMENT,
-      path: collection,
-      orderBys: orderBys,
-      firebaseListener: ref
-    };
-    if (!selectedFields && !wheres) {
-      ref = db.ref(collection);
-      ref.on("value", snapshot => {
-        results.payload = snapshot.val();
-        return callback(results);
-      });
-    } else if (!wheres) {
-      ref.on("value", snapshot => {
-        results.payload = snapshot.val();
-        if (selectedFields) {
-          results.payload = this.removeNonSelectedFieldsFromResults(
-            results.payload,
-            selectedFields
-          );
-        }
-        return callback(results);
-      });
-    } else {
-      let mainWhere = wheres[0];
-      if (mainWhere.error && mainWhere.error === NO_EQUALITY_STATEMENTS) {
-        ref.on("value", snapshot => {
-          results.payload = this.filterWheresAndNonSelectedFields(
-            snapshot.val(),
-            wheres,
-            selectedFields
-          );
-          return callback(results);
-        });
-      } else {
-        ref
-          .orderByChild(mainWhere.field)
-          .equalTo(mainWhere.value)
-          .on("value", snapshot => {
-            results.payload = this.filterWheresAndNonSelectedFields(
-              snapshot.val(),
-              wheres,
-              selectedFields
-            );
-            console.log("select results: ", results);
-
-            return callback(results);
+      SelectService.getDataForSelect(
+        db,
+        collection,
+        null,
+        wheres,
+        null,
+        dataToAlter => {
+          let data = dataToAlter.payload;
+          Object.keys(data).forEach(function(objKey, index) {
+            that.updateItemWithSets(data[objKey], sets);
+            const path = collection + "/" + objKey;
+            if (commitResults) {
+              UpdateService.updateFields(
+                db,
+                path,
+                data[objKey],
+                Object.keys(sets)
+              );
+            }
           });
-      }
-    }
+          let results = {
+            statementType: UPDATE_STATEMENT,
+            payload: data,
+            firebaseListener: dataToAlter.firebaseListener,
+            path: collection
+          };
+          callback(results);
+        }
+      );
+    });
   }
 
   static updateItemWithSets(obj, sets) {
@@ -387,19 +340,6 @@ export default class QueryHelper {
     return orderBys;
   }
 
-  static filterWheresAndNonSelectedFields(results, wheres, selectedFields) {
-    if (wheres.length > 1) {
-      results = this.filterResultsByWhereStatements(results, wheres.slice(1));
-    }
-    if (selectedFields) {
-      results = this.removeNonSelectedFieldsFromResults(
-        results,
-        selectedFields
-      );
-    }
-    return results;
-  }
-
   static getCollection(q, statementType) {
     let query = q.replace(/\(.*\)/, "").trim(); //removes nested selects
     let terms = query.split(" ");
@@ -459,7 +399,6 @@ export default class QueryHelper {
   static getObjectsFromInsert(query, db, callback) {
     //insert based on select data
     if (/^(insert into )[^\s]+( select).+/i.test(query)) {
-      debugger;
       const queryUpper = query.toUpperCase();
       const that = this;
       const selectStatement = query
@@ -469,7 +408,7 @@ export default class QueryHelper {
       const collection = this.getCollection(selectStatement, SELECT_STATEMENT);
 
       this.getWheres(selectStatement, db, wheres => {
-        this.getDataForSelect(
+        SelectService.getDataForSelect(
           db,
           collection,
           selectedFields,
@@ -481,8 +420,6 @@ export default class QueryHelper {
         );
       });
     } else {
-      debugger;
-
       //traditional insert
       let keysStr = query.substring(query.indexOf("(") + 1, query.indexOf(")"));
       let keys = keysStr.split(",");
@@ -490,18 +427,15 @@ export default class QueryHelper {
       let valuesStr = query.match(/(values).+\);/)[0];
       let valuesStrArr = valuesStr.split(/[\(](?!\))/); //splits on "(", unless its a function "func()"
       valuesStrArr.shift(); //removes "values ("
-      debugger;
       let valuesArr = valuesStrArr.map(valueStr => {
         return valueStr.substring(0, valueStr.lastIndexOf(")")).split(",");
       });
       if (!keys || !valuesArr) {
         throw "Badly formatted insert statement";
       }
-      debugger;
       let insertObjects = {};
       valuesArr.forEach((values, valuesIndex) => {
         let insertObject = {};
-        debugger;
         keys.forEach((key, keyIndex) => {
           insertObject[
             StringHelper.getParsedValue(key.trim())
@@ -512,113 +446,6 @@ export default class QueryHelper {
 
       return callback(insertObjects);
     }
-  }
-
-  static removeNonSelectedFieldsFromResults(results, selectedFields) {
-    if (!results || !selectedFields) {
-      return results;
-    }
-    Object.keys(results).forEach(function(objKey, index) {
-      if (typeof results[objKey] !== "object") {
-        if (!selectedFields[objKey]) {
-          delete results[objKey];
-        }
-      } else {
-        Object.keys(results[objKey]).forEach(function(propKey, index) {
-          if (!selectedFields[propKey]) {
-            delete results[objKey][propKey];
-          }
-        });
-      }
-    });
-    return Object.keys(results).length === 1
-      ? results[Object.keys(results)[0]]
-      : results;
-  }
-
-  static filterResultsByWhereStatements(results, whereStatements) {
-    if (!results) {
-      return null;
-    }
-    let returnedResults = {};
-    let nonMatch = {};
-    for (let i = 0; i < whereStatements.length; i++) {
-      let indexOffset = 1;
-      let where = whereStatements[i];
-      const that = this;
-      Object.keys(results).forEach(function(key, index) {
-        let thisResult = results[key][where.field];
-        if (!that.conditionIsTrue(thisResult, where.value, where.comparator)) {
-          nonMatch[key] = results[key];
-        }
-      });
-    }
-    if (nonMatch) {
-      Object.keys(results).forEach(function(key, index) {
-        if (!nonMatch[key]) {
-          returnedResults[key] = results[key];
-        }
-      });
-      return returnedResults;
-    } else {
-      return results;
-    }
-  }
-
-  static conditionIsTrue(val1, val2, comparator) {
-    switch (comparator) {
-      case "=":
-        return this.determineEquals(val1, val2);
-      case "!=":
-        return !this.determineEquals(val1, val2);
-      case "<=":
-      case "<":
-      case ">=":
-      case ">":
-        return this.determineGreaterOrLess(val1, val2, comparator);
-      case "like":
-        return this.determineStringIsLike(val1, val2);
-      case "!like":
-        return !this.determineStringIsLike(val1, val2);
-      default:
-        throw "Unrecognized comparator: " + comparator;
-    }
-  }
-
-  static determineEquals(val1, val2) {
-    val1 = typeof val1 == "undefined" || val1 == "null" ? null : val1;
-    val2 = typeof val2 == "undefined" || val2 == "null" ? null : val2;
-    return val1 === val2;
-  }
-
-  static determineGreaterOrLess(val1, val2, comparator) {
-    let isNum = false;
-    if (isNaN(val1) || isNaN(val2)) {
-      if (isValidDate(val1) && isValidDate(val2)) {
-        return executeDateComparison(val1, val2, comparator);
-      }
-    } else {
-      isNum = true;
-    }
-    switch (comparator) {
-      case "<=":
-        return isNum ? val1 <= val2 : val1.length <= val2.length;
-      case ">=":
-        return isNum ? val1 >= val2 : val1.length >= val2.length;
-      case ">":
-        return isNum ? val1 > val2 : val1.length < val2.length;
-      case "<":
-        return isNum ? val1 < val2 : val1.length < val2.length;
-    }
-  }
-
-  static determineStringIsLike(val1, val2) {
-    //TODO: LIKE fails on reserved regex characters (., +, etc)
-    let regex = StringHelper.replaceAll(val2, "%", ".*");
-    regex = StringHelper.replaceAll(regex, "_", ".{1}");
-    // regex= StringHelper.replaceAll(regex,'\+','\+');
-    let re = new RegExp("^" + regex + "$", "g");
-    return re.test(val1);
   }
 
   static determineComparatorAndIndex(where) {

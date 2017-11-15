@@ -18,6 +18,7 @@ const DatabaseConfig = ({
     database.title = title;
     if (!store.newDb || !store.newDb.data) {
       store.modal = null;
+      database.firestoreEnabled = firestoreToggle;
       store.updateDatabase(database);
       store.firestoreEnabled = firestoreToggle;
       return;
