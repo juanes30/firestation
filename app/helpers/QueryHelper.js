@@ -458,7 +458,8 @@ export default class QueryHelper {
 
   static getObjectsFromInsert(query, db, callback) {
     //insert based on select data
-    if (/^(insert into )[^s]+( select).+/i.test(query)) {
+    if (/^(insert into )[^\s]+( select).+/i.test(query)) {
+      debugger;
       const queryUpper = query.toUpperCase();
       const that = this;
       const selectStatement = query
@@ -480,10 +481,12 @@ export default class QueryHelper {
         );
       });
     } else {
+      debugger;
+
       //traditional insert
       let keysStr = query.substring(query.indexOf("(") + 1, query.indexOf(")"));
       let keys = keysStr.split(",");
-      
+
       let valuesStr = query.match(/(values).+\);/)[0];
       let valuesStrArr = valuesStr.split(/[\(](?!\))/); //splits on "(", unless its a function "func()"
       valuesStrArr.shift(); //removes "values ("
@@ -494,7 +497,7 @@ export default class QueryHelper {
       if (!keys || !valuesArr) {
         throw "Badly formatted insert statement";
       }
-debugger;
+      debugger;
       let insertObjects = {};
       valuesArr.forEach((values, valuesIndex) => {
         let insertObject = {};
