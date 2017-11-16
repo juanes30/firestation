@@ -1,9 +1,9 @@
 import StringHelper from "./StringHelper";
 import UpdateService from "../service/UpdateService";
 import SelectService from "../service/SelectService";
-
 import FirebaseService from "../service/FirebaseService";
 import { isValidDate, executeDateComparison } from "../helpers/DateHelper";
+import admin from "firebase-admin";
 const NO_EQUALITY_STATEMENTS = "NO_EQUALITY_STATEMENTS";
 const SELECT_STATEMENT = "SELECT_STATEMENT";
 const UPDATE_STATEMENT = "UPDATE_STATEMENT";
@@ -11,6 +11,9 @@ const INSERT_STATEMENT = "INSERT_STATEMENT";
 const DELETE_STATEMENT = "DELETE_STATEMENT";
 const FIRESTATION_DATA_PROP = "FIRESTATION_DATA_PROP";
 const EQUATION_IDENTIFIERS = [" / ", " + ", " - ", " * "];
+
+// import firebase from "firebase";
+// let firestore = require("firebase/firestore");
 
 export default class QueryHelper {
   static getRootKeysPromise(database) {
@@ -27,8 +30,10 @@ export default class QueryHelper {
   }
 
   static executeQuery(query, database, callback, commitResults) {
+    debugger;
     let app = FirebaseService.startFirebaseApp(database);
-    let db = app[database.firestoreEnabled ? "firestore" : "database"]();
+    let db = admin.firestore();
+    // let db = database.firestoreEnabled ? app.firestore() : app.database();
 
     //maybe delete these two lines, but i think it may do something important..
     //cant remember.. >.<, all listeners should already be killed on App.executeQuery()

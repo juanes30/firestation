@@ -10,6 +10,8 @@ export default class SelectService {
     orderBys,
     callback
   ) {
+    debugger;
+
     console.log(
       "getData (collection, selectedFields, wheres):",
       collection,
@@ -23,26 +25,20 @@ export default class SelectService {
       orderBys: orderBys,
       firebaseListener: ref
     };
-    if (!selectedFields && !wheres) {
-      ref = db.ref(collection);
-      ref.on("value", snapshot => {
-        results.payload = snapshot.val();
-        return callback(results);
-      });
-    } else if (!wheres) {
-      ref.on("value", snapshot => {
-        results.payload = snapshot.val();
-        if (selectedFields) {
-          results.payload = this.removeNonSelectedFieldsFromResults(
-            results.payload,
-            selectedFields
-          );
+    if (!wheres) {
+      //unfiltered query, grab whole collection
+      this.grabCollectionAndFilterLocally(
+        db,
+        collection,
+        selectedFields,
+        results => {
+          callback(results);
         }
-        return callback(results);
-      });
+      );
     } else {
       let mainWhere = wheres[0];
       if (mainWhere.error && mainWhere.error === "NO_EQUALITY_STATEMENTS") {
+        //no filterable wheres, grab all & filter on client
         ref.on("value", snapshot => {
           results.payload = this.filterWheresAndNonSelectedFields(
             snapshot.val(),
@@ -66,6 +62,31 @@ export default class SelectService {
             return callback(results);
           });
       }
+    }
+  }
+
+  static grabCollectionAndFilterLocally(
+    db,
+    collection,
+    selectedFields,
+    callback
+  ) {
+    if (db.firestoreEnabled) {
+      let results = db.collection(collection).get().onSnapshot(snap => {
+        debugger;
+        console.log(snap);
+      });
+    } else {
+      ref.on("value", snapshot => {
+        results.payload = snapshot.val();
+        if (selectedFields) {
+          results.payload = this.removeNonSelectedFieldsFromResults(
+            results.payload,
+            selectedFields
+          );
+        }
+        return callback(results);
+      });
     }
   }
 
