@@ -1,5 +1,7 @@
 import React from "react";
-import FirebaseService from "../service/FirebaseService";
+const FirebaseService = require("electron").remote.require(
+  "./server/service/FirebaseService"
+);
 import fs from "fs";
 import moment from "moment";
 const { dialog, app } = require("electron").remote;

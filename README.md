@@ -19,3 +19,8 @@ $ git clone https://github.com/JoeRoddy/firestation.git
 $ cd firestation && npm install
 $ npm run dev
 ```
+
+If you're having issues, you may need to run:
+```bash
+$ npm run rebuild
+```

@@ -1,5 +1,7 @@
 import React from "react";
-import FirebaseService from "../../service/FirebaseService";
+const FirebaseService = require("electron").remote.require(
+  "./server/service/FirebaseService"
+);
 import { inject, observer } from "mobx-react";
 
 const DatabaseConfig = ({

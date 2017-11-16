@@ -1,7 +1,9 @@
 import React, { Component } from "react";
 import { inject, observer } from "mobx-react";
 import "../assets/stylesheets/base.scss";
-import FirebaseService from "../service/FirebaseService";
+const FirebaseService = require("electron").remote.require(
+  "./server/service/FirebaseService"
+);
 import QueryHelper from "../helpers/QueryHelper";
 import Workstation from "./Workstation";
 import Navbar from "./Navbar";

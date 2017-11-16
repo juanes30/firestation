@@ -1,9 +1,10 @@
 import StringHelper from "./StringHelper";
-import UpdateService from "../service/UpdateService";
-import SelectService from "../service/SelectService";
-import FirebaseService from "../service/FirebaseService";
+const services = "./server/service/";
+const remote = require("electron").remote;
+const SelectService = remote.require(`${services}SelectService`);
+const FirebaseService = remote.require(`${services}FirebaseService`);
+const UpdateService = remote.require(`${services}UpdateService`);
 import { isValidDate, executeDateComparison } from "../helpers/DateHelper";
-import admin from "firebase-admin";
 const NO_EQUALITY_STATEMENTS = "NO_EQUALITY_STATEMENTS";
 const SELECT_STATEMENT = "SELECT_STATEMENT";
 const UPDATE_STATEMENT = "UPDATE_STATEMENT";
@@ -11,9 +12,6 @@ const INSERT_STATEMENT = "INSERT_STATEMENT";
 const DELETE_STATEMENT = "DELETE_STATEMENT";
 const FIRESTATION_DATA_PROP = "FIRESTATION_DATA_PROP";
 const EQUATION_IDENTIFIERS = [" / ", " + ", " - ", " * "];
-
-// import firebase from "firebase";
-// let firestore = require("firebase/firestore");
 
 export default class QueryHelper {
   static getRootKeysPromise(database) {
@@ -30,15 +28,14 @@ export default class QueryHelper {
   }
 
   static executeQuery(query, database, callback, commitResults) {
-    debugger;
     let app = FirebaseService.startFirebaseApp(database);
-    let db = admin.firestore();
-    // let db = database.firestoreEnabled ? app.firestore() : app.database();
-
+    let db = database.firestoreEnabled ? app.firestore() : app.database();
+    db.firestoreEnabled = database.firestoreEnabled;
+    debugger;
     //maybe delete these two lines, but i think it may do something important..
     //cant remember.. >.<, all listeners should already be killed on App.executeQuery()
-    let ref = db.ref("/");
-    ref.off("value");
+    // let ref = db.ref("/");
+    // ref.off("value");
 
     const statementType = this.determineQueryType(query);
     if (statementType === SELECT_STATEMENT) {
@@ -119,6 +116,7 @@ export default class QueryHelper {
     const orderBys = this.getOrderBys(query);
     const selectedFields = this.getSelectedFields(query);
     this.getWheres(query, db, wheres => {
+      debugger;
       SelectService.getDataForSelect(
         db,
         collection,

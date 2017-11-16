@@ -1,6 +1,8 @@
 import { observable } from "mobx";
 import CacheHelper from "../helpers/CacheHelper";
-import FirebaseService from "../service/FirebaseService";
+const FirebaseService = require("electron").remote.require(
+  "./server/service/FirebaseService"
+);
 
 class Store {
   @observable databases = CacheHelper.getFromLocalStore("databases");

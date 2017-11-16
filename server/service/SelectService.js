@@ -1,5 +1,5 @@
 import admin from "firebase-admin";
-import StringHelper from "../helpers/StringHelper";
+import StringHelper from "../../app/helpers/StringHelper";
 
 export default class SelectService {
   static getDataForSelect(
@@ -18,12 +18,15 @@ export default class SelectService {
       selectedFields,
       wheres
     );
-    var ref = db.ref(collection);
+
+    //TODO: reimplement, using firestore listeners as well
+    // var ref = db.ref(collection);
     let results = {
       queryType: "SELECT_STATEMENT",
       path: collection,
       orderBys: orderBys,
-      firebaseListener: ref
+      payload: {}
+      // firebaseListener: ref
     };
     if (!wheres) {
       //unfiltered query, grab whole collection
@@ -31,8 +34,9 @@ export default class SelectService {
         db,
         collection,
         selectedFields,
-        results => {
-          callback(results);
+        results,
+        res => {
+          callback(res);
         }
       );
     } else {
@@ -69,15 +73,20 @@ export default class SelectService {
     db,
     collection,
     selectedFields,
+    results,
     callback
   ) {
-    if (db.firestoreEnabled) {
-      let results = db.collection(collection).get().onSnapshot(snap => {
-        debugger;
-        console.log(snap);
+    console.log("grabCol&filter");
+    if (db.api && db.api.Firestore) {
+      //TODO: figure out a way to make this a listener
+      db.collection(collection).get().then(querySnapshot => {
+        querySnapshot.forEach(function(doc) {
+          results.payload[doc.id] = doc.data();
+        });
+        return callback(results);
       });
     } else {
-      ref.on("value", snapshot => {
+      db.ref(collection).on("value", snapshot => {
         results.payload = snapshot.val();
         if (selectedFields) {
           results.payload = this.removeNonSelectedFieldsFromResults(

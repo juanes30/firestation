@@ -4,8 +4,12 @@ import typeName from "type-name";
 import ReactTooltip from "react-tooltip";
 import PropTypes from "prop-types";
 import StringHelper from "../../helpers/StringHelper";
-import UpdateService from "../../service/UpdateService";
-import FirebaseService from "../../service/FirebaseService";
+const UpdateService = require("electron").remote.require(
+  "./server/service/UpdateService"
+);
+const FirebaseService = require("electron").remote.require(
+  "./server/service/FirebaseService"
+);
 
 export default class ObjectNode extends React.Component {
   constructor(props) {
