@@ -9,6 +9,9 @@
 * build commits into history, allow user to revert back to previous data
 * collapse sidebar
 
+### Firestore
+* display embedded collections when they exist within a document
+
 ### Keymap
 * give shortcuts preview (ctrl+enter --> execute query, etc)
 * allow users to add shortcuts to paste saved queries
