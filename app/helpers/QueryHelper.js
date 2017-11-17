@@ -266,6 +266,7 @@ export default class QueryHelper {
           .substring(eqCompAndIndex.index + eqCompAndIndex.comparator.length)
           .trim()
       );
+      const isFirestore = db.api && db.api.Firestore;
       if (
         typeof val === "string" &&
         val.charAt(0) === "(" &&
@@ -275,14 +276,14 @@ export default class QueryHelper {
           whereObj.value = results.payload;
           wheres.push(whereObj);
           if (wheresArr.length === wheres.length) {
-            return callback(this.optimizeWheres(wheres));
+            return callback(this.optimizeWheres(wheres, isFirestore));
           }
         });
       } else {
         whereObj.value = val;
         wheres.push(whereObj);
         if (wheresArr.length === wheres.length) {
-          return callback(this.optimizeWheres(wheres));
+          return callback(this.optimizeWheres(wheres, isFirestore));
         }
       }
     });
@@ -487,7 +488,7 @@ export default class QueryHelper {
 
     let eqIndex = where.indexOf("=");
     if (eqIndex >= 0) {
-      return { comparator: "=", index: eqIndex };
+      return { comparator: "==", index: eqIndex };
     }
 
     throw "Unrecognized comparator in where clause: '" + where + "'.";
@@ -505,12 +506,19 @@ export default class QueryHelper {
     return StringHelper.regexIndexOf(condition, /!=|<>/);
   }
 
-  static optimizeWheres(wheres) {
+  static optimizeWheres(wheres, isFirestore) {
+    let queryableComparators = isFirestore
+      ? ["==", "<", "<=", ">", ">="]
+      : ["=="];
+
     //rearranges wheres so first statement is an equal, or error if no equals
     //firebase has no != method, so we'll grab whole collection, and filter on client
     const firstNotEqStatement = wheres[0];
     for (let i = 0; i < wheres.length; i++) {
-      if (wheres[i].value != null && wheres[i].comparator === "=") {
+      if (
+        wheres[i].value != null &&
+        queryableComparators.includes(wheres[i].comparator)
+      ) {
         wheres[0] = wheres[i];
         wheres[i] = firstNotEqStatement;
         return wheres;

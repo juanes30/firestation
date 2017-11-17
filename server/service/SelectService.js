@@ -121,12 +121,18 @@ export default class SelectService {
 
     db
       .collection(collection)
-      .where(mainWhere.field, "==", mainWhere.value)
+      .where(mainWhere.field, mainWhere.comparator, mainWhere.value)
       .onSnapshot(snapshot => {
-        var payload = {};
+        let payload = {};
         snapshot.forEach(doc => {
           payload[doc.id] = doc.data();
         });
+        payload = this.filterWheresAndNonSelectedFields(
+          payload,
+          wheres,
+          selectedFields
+        );
+
         results.payload = payload;
         callback(results);
       });
@@ -234,7 +240,7 @@ export default class SelectService {
 
   static conditionIsTrue(val1, val2, comparator) {
     switch (comparator) {
-      case "=":
+      case "==":
         return this.determineEquals(val1, val2);
       case "!=":
         return !this.determineEquals(val1, val2);
