@@ -30,8 +30,7 @@ export default class QueryHelper {
   static executeQuery(query, database, callback, commitResults) {
     let app = FirebaseService.startFirebaseApp(database);
     let db = database.firestoreEnabled ? app.firestore() : app.database();
-    db.firestoreEnabled = database.firestoreEnabled;
-    debugger;
+
     //maybe delete these two lines, but i think it may do something important..
     //cant remember.. >.<, all listeners should already be killed on App.executeQuery()
     // let ref = db.ref("/");

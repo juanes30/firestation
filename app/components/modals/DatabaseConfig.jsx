@@ -50,10 +50,21 @@ const DatabaseConfig = ({
     store.firestoreEnabled = !store.firestoreEnabled;
   };
 
+  const confirmDelete = () => {
+    // let confirm = confirm("Are you sure you want to delete this database?");
+    if (true) {
+      store.deleteCurrentDatabase();
+    }
+  };
+
   return (
     <div className="DatabaseConfig">
       <div className="col-md-auto">
-        <h2>DB: {currentDatabase.title}</h2> <br />
+        <h2>DB: {currentDatabase.title}</h2>
+        <button onClick={confirmDelete} className="bt sm red">
+          Delete
+        </button>
+        <br />
         <div className="nameEdit">
           <h4>Name:</h4>
           <input

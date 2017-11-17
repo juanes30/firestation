@@ -14,7 +14,8 @@
     "start-hot": "cross-env HOT=1 NODE_ENV=development electron -r babel-register -r babel-polyfill ./main.development",
     "package": "cross-env NODE_ENV=production node -r babel-register package.js",
     "package-all": "npm run package -- --all",
-    "dev": "concurrently --kill-others \"npm run hot-server\" \"npm run start-hot\""
+    "dev": "concurrently --kill-others \"npm run hot-server\" \"npm run start-hot\"",
+    "rebuild": "$(npm bin)/electron-rebuild"
   },
   "bin": {
     "electron": "./node_modules/.bin/electron"
@@ -62,7 +63,6 @@
     "fbjs-scripts": "^0.7.1",
     "flow": "^0.2.3",
     "flow-bin": "^0.31.1",
-    "ignore-loader": "^0.1.2",
     "json-loader": "^0.5.4",
     "minimist": "^1.2.0",
     "node-libs-browser": "^1.0.0",

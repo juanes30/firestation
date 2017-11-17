@@ -1,5 +1,9 @@
 import admin from "firebase-admin";
 import StringHelper from "../../app/helpers/StringHelper";
+import {
+  isValidDate,
+  executeDateComparison
+} from "../../app/helpers/DateHelper";
 
 export default class SelectService {
   static getDataForSelect(
@@ -10,106 +14,171 @@ export default class SelectService {
     orderBys,
     callback
   ) {
-    debugger;
-
     console.log(
       "getData (collection, selectedFields, wheres):",
       collection,
       selectedFields,
       wheres
     );
+    const isFirestore = db.api && db.api.Firestore;
 
-    //TODO: reimplement, using firestore listeners as well
-    // var ref = db.ref(collection);
+    //TODO: reimplement listeners, using firestore listeners as well
     let results = {
       queryType: "SELECT_STATEMENT",
       path: collection,
       orderBys: orderBys,
       payload: {}
-      // firebaseListener: ref
     };
-    if (!wheres) {
-      //unfiltered query, grab whole collection
-      this.grabCollectionAndFilterLocally(
+    if (
+      !wheres ||
+      (wheres[0] && wheres[0] && wheres[0].error === "NO_EQUALITY_STATEMENTS")
+    ) {
+      //unfilterable query, grab whole collection
+      const args = [
         db,
         collection,
         selectedFields,
         results,
         res => {
-          callback(res);
-        }
-      );
-    } else {
-      let mainWhere = wheres[0];
-      if (mainWhere.error && mainWhere.error === "NO_EQUALITY_STATEMENTS") {
-        //no filterable wheres, grab all & filter on client
-        ref.on("value", snapshot => {
-          results.payload = this.filterWheresAndNonSelectedFields(
-            snapshot.val(),
-            wheres,
-            selectedFields
-          );
-          return callback(results);
-        });
-      } else {
-        ref
-          .orderByChild(mainWhere.field)
-          .equalTo(mainWhere.value)
-          .on("value", snapshot => {
-            results.payload = this.filterWheresAndNonSelectedFields(
-              snapshot.val(),
+          if (wheres && wheres[0]) {
+            res.payload = this.filterWheresAndNonSelectedFields(
+              res.payload,
               wheres,
               selectedFields
             );
-            console.log("select results: ", results);
-
-            return callback(results);
-          });
+            // results.firebaseListener = ref;
+          }
+          return callback(res);
+        }
+      ];
+      if (isFirestore) {
+        this.queryEntireFirestoreCollection(...args);
+      } else {
+        this.queryEntireRealtimeCollection(...args);
+      }
+    } else {
+      //filterable query
+      if (isFirestore) {
+        this.executeFilteredFirestoreQuery(results, ...arguments);
+      } else {
+        this.executeFilteredRealtimeQuery(results, ...arguments);
       }
     }
   }
 
-  static grabCollectionAndFilterLocally(
+  static queryEntireFirestoreCollection(
     db,
     collection,
     selectedFields,
     results,
     callback
   ) {
-    console.log("grabCol&filter");
-    if (db.api && db.api.Firestore) {
-      //TODO: figure out a way to make this a listener
-      db.collection(collection).get().then(querySnapshot => {
-        querySnapshot.forEach(function(doc) {
-          results.payload[doc.id] = doc.data();
-        });
-        return callback(results);
+    console.log("NON_FILTERABLE_FIRESTORE_QUERY");
+
+    //TODO: figure out a way to make this a listener
+    db.collection(collection).get().then(querySnapshot => {
+      querySnapshot.forEach(function(doc) {
+        results.payload[doc.id] = doc.data();
       });
-    } else {
-      db.ref(collection).on("value", snapshot => {
-        results.payload = snapshot.val();
-        if (selectedFields) {
-          results.payload = this.removeNonSelectedFieldsFromResults(
-            results.payload,
-            selectedFields
-          );
-        }
-        return callback(results);
-      });
-    }
+      return callback(results);
+    });
   }
 
-  static filterWheresAndNonSelectedFields(results, wheres, selectedFields) {
+  static queryEntireRealtimeCollection(
+    db,
+    collection,
+    selectedFields,
+    results,
+    callback
+  ) {
+    console.log("NON_FILTERED_REALTIME_QUERY");
+
+    let ref = db.ref(collection);
+    ref.on("value", snapshot => {
+      results.payload = snapshot.val();
+      if (selectedFields) {
+        results.payload = this.removeNonSelectedFieldsFromResults(
+          results.payload,
+          selectedFields
+        );
+        results.firebaseListener = ref;
+      }
+      return callback(results);
+    });
+  }
+
+  static executeFilteredFirestoreQuery(
+    results,
+    db,
+    collection,
+    selectedFields,
+    wheres,
+    orderBys,
+    callback
+  ) {
+    console.log("FILTERED_FIRESTORE");
+    const mainWhere = wheres[0];
+
+    db
+      .collection(collection)
+      .where(mainWhere.field, "==", mainWhere.value)
+      .onSnapshot(snapshot => {
+        var payload = {};
+        snapshot.forEach(doc => {
+          payload[doc.id] = doc.data();
+        });
+        results.payload = payload;
+        callback(results);
+      });
+  }
+
+  static executeFilteredRealtimeQuery(
+    results,
+    db,
+    collection,
+    selectedFields,
+    wheres,
+    orderBys,
+    callback
+  ) {
+    console.log("FILTERED_REALTIME");
+
+    const mainWhere = wheres[0];
+    let ref = db.ref(collection);
+    ref
+      .orderByChild(mainWhere.field)
+      .equalTo(mainWhere.value)
+      .on("value", snapshot => {
+        results.payload = this.filterWheresAndNonSelectedFields(
+          snapshot.val(),
+          wheres,
+          selectedFields
+        );
+        console.log("select results: ", results);
+        results.firebaseListener = ref;
+
+        return callback(results);
+      });
+  }
+
+  static filterWheresAndNonSelectedFields(
+    resultsPayload,
+    wheres,
+    selectedFields
+  ) {
     if (wheres.length > 1) {
-      results = this.filterResultsByWhereStatements(results, wheres.slice(1));
+      resultsPayload = this.filterResultsByWhereStatements(
+        resultsPayload,
+        wheres.slice(1)
+      );
     }
     if (selectedFields) {
-      results = this.removeNonSelectedFieldsFromResults(
-        results,
+      resultsPayload = this.removeNonSelectedFieldsFromResults(
+        resultsPayload,
         selectedFields
       );
     }
-    return results;
+    return resultsPayload;
   }
 
   static removeNonSelectedFieldsFromResults(results, selectedFields) {

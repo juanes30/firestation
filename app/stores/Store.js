@@ -132,6 +132,16 @@ class Store {
     });
   }
 
+  deleteCurrentDatabase() {
+    this.databases = this.databases.filter(db => {
+      return db.serviceKey.project_id === this.currentDatabase.serviceKey.project_id;
+    });
+    CacheHelper.updateLocalStore("databases", this.databases);
+    CacheHelper.updateLocalStore("currentDatabase", null);
+
+    this.currentDatabase = null;
+  }
+
   updateDatabase(database) {
     let databases = this.databases.map(db => {
       if (database.serviceKey.project_id === db.serviceKey.project_id) {
