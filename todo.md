@@ -1,7 +1,7 @@
 # Development - To Do
 
 ## Bugs
-* hangs when deleting many records
+* hangs when deleting many records (this is bc of .on)
 
 ## Features
 ### General
