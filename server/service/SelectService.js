@@ -12,6 +12,7 @@ export default class SelectService {
     selectedFields,
     wheres,
     orderBys,
+    shouldApplyListener,
     callback
   ) {
     console.log(
@@ -24,7 +25,7 @@ export default class SelectService {
 
     //TODO: reimplement listeners, using firestore listeners as well
     let results = {
-      queryType: "SELECT_STATEMENT",
+      statementType: "SELECT_STATEMENT",
       path: collection,
       orderBys: orderBys,
       payload: {}
@@ -39,6 +40,7 @@ export default class SelectService {
         collection,
         selectedFields,
         results,
+        shouldApplyListener,
         res => {
           if (wheres && wheres[0]) {
             res.payload = this.filterWheresAndNonSelectedFields(
@@ -71,17 +73,21 @@ export default class SelectService {
     collection,
     selectedFields,
     results,
+    shouldApplyListener,
     callback
   ) {
     console.log("NON_FILTERABLE_FIRESTORE_QUERY");
-
     //TODO: figure out a way to make this a listener
-    db.collection(collection).get().then(querySnapshot => {
-      querySnapshot.forEach(function(doc) {
-        results.payload[doc.id] = doc.data();
+    db
+      .collection(collection)
+      .get()
+      .then(querySnapshot => {
+        querySnapshot.forEach(function(doc) {
+          results.payload[doc.id] = doc.data();
+        });
+        console.log("entire collection: ", results.payload);
+        return callback(results);
       });
-      return callback(results);
-    });
   }
 
   static queryEntireRealtimeCollection(
@@ -89,20 +95,20 @@ export default class SelectService {
     collection,
     selectedFields,
     results,
+    shouldApplyListener,
     callback
   ) {
     console.log("NON_FILTERED_REALTIME_QUERY");
-
     let ref = db.ref(collection);
-    ref.on("value", snapshot => {
+    ref[shouldApplyListener ? "on" : "once"]("value", snapshot => {
       results.payload = snapshot.val();
       if (selectedFields) {
         results.payload = this.removeNonSelectedFieldsFromResults(
           results.payload,
           selectedFields
         );
-        results.firebaseListener = ref;
       }
+      results.firebaseListener = ref;
       return callback(results);
     });
   }
@@ -114,6 +120,7 @@ export default class SelectService {
     selectedFields,
     wheres,
     orderBys,
+    shouldApplyListener,
     callback
   ) {
     console.log("FILTERED_FIRESTORE");
@@ -145,6 +152,7 @@ export default class SelectService {
     selectedFields,
     wheres,
     orderBys,
+    shouldApplyListener,
     callback
   ) {
     console.log("FILTERED_REALTIME");

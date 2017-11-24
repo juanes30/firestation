@@ -1,8 +1,9 @@
 import React from "react";
 import PropTypes from "prop-types";
 import ReactTooltip from "react-tooltip";
+import { observer } from "mobx-react";
 
-const ButtonRow = props => {
+const ButtonRow =  observer(props => {
   const payloadSize = props.payloadSize;
   const store = props.store;
   return (
@@ -60,7 +61,7 @@ const ButtonRow = props => {
       </div>
     </div>
   );
-};
+});
 
 ButtonRow.propTypes = {
   payloadSize: PropTypes.number,

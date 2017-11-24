@@ -55,27 +55,24 @@ export default class App extends Component {
     query = QueryHelper.formatAndCleanQuery(query);
     this.props.store.addQueryToHistory(query);
     this.props.store.executingQuery = true;
-    // try {
-    QueryHelper.executeQuery(
-      query,
-      this.props.store.currentDatabase,
-      results => {
-        this.props.store.executingQuery = false;
-        if (results && results.queryType != "SELECT_STATEMENT") {
-          this.props.store.commitQuery = query;
-          this.props.store.results = results;
-          this.props.store.firebaseListeners.push(results.firebaseListener);
-        } else {
-          this.props.store.results = results;
-          this.props.store.firebaseListeners.push(results.firebaseListener);
+    try {
+      QueryHelper.executeQuery(
+        query,
+        this.props.store.currentDatabase,
+        results => {
+          this.props.store.addNewListener(results.firebaseListener);
+          this.props.store.executingQuery = false;
+          this.props.store.results = null; //updating object props alone won't work w/mobx objects, need to reset to trigger observables
+          this.props.store.results = results;   
+          if (results && results.statementType != "SELECT_STATEMENT") {
+            this.props.store.commitQuery = query;
+          }
         }
-      }
-    );
-    // }
-    // catch (error) {
-    //   this.props.store.results = { error };
-    //   this.props.store.executingQuery = false;
-    // }
+      );
+    } catch (error) {
+      this.props.store.results = { error };
+      this.props.store.executingQuery = false;
+    }
   };
 
   commit = () => {

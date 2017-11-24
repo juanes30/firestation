@@ -90,12 +90,12 @@ class Store {
   addNewListener = listener => {
     this[
       this.currentDatabase.firestoreEnabled
-        ? this.firestoreListeners
-        : this.firebaseListeners
+        ? "firestoreListeners"
+        : "firebaseListeners"
     ].push(listener);
   };
 
-  killListeners() {
+  killListeners = () => {
     this.firebaseListeners.forEach(ref => {
       ref && ref.off("value");
     });
@@ -104,7 +104,7 @@ class Store {
     });
     this.firebaseListeners = [];
     this.firestoreListeners = [];
-  }
+  };
 
   setCurrentDatabase(database) {
     this.currentDatabase = database;
@@ -134,7 +134,9 @@ class Store {
 
   deleteCurrentDatabase() {
     this.databases = this.databases.filter(db => {
-      return db.serviceKey.project_id === this.currentDatabase.serviceKey.project_id;
+      return (
+        db.serviceKey.project_id === this.currentDatabase.serviceKey.project_id
+      );
     });
     CacheHelper.updateLocalStore("databases", this.databases);
     CacheHelper.updateLocalStore("currentDatabase", null);

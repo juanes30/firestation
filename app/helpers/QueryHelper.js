@@ -12,6 +12,7 @@ const INSERT_STATEMENT = "INSERT_STATEMENT";
 const DELETE_STATEMENT = "DELETE_STATEMENT";
 const FIRESTATION_DATA_PROP = "FIRESTATION_DATA_PROP";
 const EQUATION_IDENTIFIERS = [" / ", " + ", " - ", " * "];
+import _ from "lodash";
 
 export default class QueryHelper {
   static getRootKeysPromise(database) {
@@ -36,7 +37,7 @@ export default class QueryHelper {
     // let ref = db.ref("/");
     // ref.off("value");
 
-    const statementType = this.determineQueryType(query);
+    const statementType = this.determineStatementType(query);
     if (statementType === SELECT_STATEMENT) {
       this.executeSelect(query, db, callback);
     } else if (statementType === UPDATE_STATEMENT) {
@@ -60,7 +61,7 @@ export default class QueryHelper {
     const that = this;
     const insertCount = this.getInsertCount(query);
     const path = collection + "/";
-    this.getObjectsFromInsert(query, db, insertObjects => {
+    this.getObjectsFromInsert(query, db, !commitResults, insertObjects => {
       if (commitResults) {
         let keys = insertObjects && Object.keys(insertObjects);
         for (let i = 1; i < insertCount; i++) {
@@ -91,9 +92,10 @@ export default class QueryHelper {
         null,
         wheres,
         null,
+        !commitResults,
         dataToAlter => {
           if (dataToAlter && commitResults) {
-            Object.keys(dataToAlter.payload).forEach(function(objKey, index) {
+            Object.keys(dataToAlter.payload).forEach((objKey, index) => {
               const path = collection + "/" + objKey;
               UpdateService.deleteObject(db, path);
             });
@@ -115,13 +117,13 @@ export default class QueryHelper {
     const orderBys = this.getOrderBys(query);
     const selectedFields = this.getSelectedFields(query);
     this.getWheres(query, db, wheres => {
-      debugger;
       SelectService.getDataForSelect(
         db,
         collection,
         selectedFields,
         wheres,
         orderBys,
+        true,
         callback
       );
     });
@@ -140,24 +142,28 @@ export default class QueryHelper {
         collection,
         null,
         wheres,
+        !commitResults,
         null,
         dataToAlter => {
           let data = dataToAlter.payload;
-          Object.keys(data).forEach(function(objKey, index) {
-            that.updateItemWithSets(data[objKey], sets);
+          let payload = {};
+          Object.keys(data).forEach((objKey, index) => {
+            let updateObj = that.updateItemWithSets(data[objKey], sets);
+            console.log("update object b4 call:", updateObj);
             const path = collection + "/" + objKey;
             if (commitResults) {
               UpdateService.updateFields(
                 db,
                 path,
-                data[objKey],
+                updateObj,
                 Object.keys(sets)
               );
             }
+            payload[objKey] = updateObj;
           });
           let results = {
             statementType: UPDATE_STATEMENT,
-            payload: data,
+            payload,
             firebaseListener: dataToAlter.firebaseListener,
             path: collection
           };
@@ -169,7 +175,8 @@ export default class QueryHelper {
 
   static updateItemWithSets(obj, sets) {
     const that = this;
-    Object.keys(sets).forEach(function(objKey, index) {
+    let updateObject = _.clone(obj);
+    Object.keys(sets).forEach((objKey, index) => {
       const thisSet = sets[objKey];
       if (
         thisSet &&
@@ -180,28 +187,28 @@ export default class QueryHelper {
         const newVal = thisSet.FIRESTATION_DATA_PROP;
         for (let i = 0; i < EQUATION_IDENTIFIERS.length; i++) {
           if (newVal.includes(EQUATION_IDENTIFIERS[i])) {
-            obj[objKey] = that.executeUpdateEquation(
-              obj,
+            updateObject[objKey] = that.executeUpdateEquation(
+              updateObject,
               thisSet.FIRESTATION_DATA_PROP
             );
-            return;
+            return updateObject;
           }
         }
         //not an equation, treat it as an individual prop
-        let finalValue = obj[newVal];
+        let finalValue = updateObject[newVal];
         if (newVal.includes(".")) {
           let props = newVal.split(".");
-          finalValue = obj[props[0]];
-          for (let i = 1; i < props.length; i++) {
+          finalValue = updateObject[props[0]];
+          for (let i = 1; updateObjecti < props.length; i++) {
             finalValue = finalValue[props[i]];
           }
         }
-        obj[objKey] = finalValue;
+        updateObject[objKey] = finalValue;
       } else {
-        obj[objKey] = thisSet;
+        updateObject[objKey] = thisSet;
       }
     });
-    return obj;
+    return updateObject;
   }
 
   static executeUpdateEquation(existingObject, equation) {
@@ -218,9 +225,12 @@ export default class QueryHelper {
     return eval(equation);
   }
 
-  static determineQueryType(query) {
+  static determineStatementType(query) {
     let q = query.trim();
-    let firstTerm = q.split(" ")[0].trim().toLowerCase();
+    let firstTerm = q
+      .split(" ")[0]
+      .trim()
+      .toLowerCase();
     switch (firstTerm) {
       case "select":
         return SELECT_STATEMENT;
@@ -399,7 +409,7 @@ export default class QueryHelper {
     return selectedFields;
   }
 
-  static getObjectsFromInsert(query, db, callback) {
+  static getObjectsFromInsert(query, db, shouldApplyListener, callback) {
     //insert based on select data
     if (/^(insert into )[^\s]+( select).+/i.test(query)) {
       const queryUpper = query.toUpperCase();
@@ -416,6 +426,7 @@ export default class QueryHelper {
           collection,
           selectedFields,
           wheres,
+          shouldApplyListener,
           null,
           selectData => {
             return callback(selectData.payload);
