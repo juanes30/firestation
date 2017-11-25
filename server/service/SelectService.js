@@ -85,6 +85,12 @@ export default class SelectService {
         querySnapshot.forEach(function(doc) {
           results.payload[doc.id] = doc.data();
         });
+        if (selectedFields) {
+          results.payload = this.removeNonSelectedFieldsFromResults(
+            results.payload,
+            selectedFields
+          );
+        }
         return callback(results);
       });
   }
@@ -198,13 +204,13 @@ export default class SelectService {
     if (!results || !selectedFields) {
       return results;
     }
-    Object.keys(results).forEach(function(objKey, index) {
+    Object.keys(results).forEach((objKey, index) => {
       if (typeof results[objKey] !== "object") {
         if (!selectedFields[objKey]) {
           delete results[objKey];
         }
       } else {
-        Object.keys(results[objKey]).forEach(function(propKey, index) {
+        Object.keys(results[objKey]).forEach((propKey, index) => {
           if (!selectedFields[propKey]) {
             delete results[objKey][propKey];
           }
