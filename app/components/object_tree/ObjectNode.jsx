@@ -4,6 +4,8 @@ import typeName from "type-name";
 import ReactTooltip from "react-tooltip";
 import PropTypes from "prop-types";
 import StringHelper from "../../helpers/StringHelper";
+import _ from "lodash";
+
 const UpdateService = require("electron").remote.require(
   "./server/service/UpdateService"
 );
@@ -301,7 +303,7 @@ export default class ObjectNode extends React.Component {
       newValue;
     if (pathUnderEdit && this.state.keyEdit && confirm(keyConfirmationMsg)) {
       keyChangeConfirmed = true;
-      let newObject = this.props.value;
+      let newObject = _.clone(this.props.value);
       let oldKey = pathUnderEdit.substring(pathUnderEdit.lastIndexOf("/") + 1);
       newObject[newValue] = newObject[oldKey];
       delete newObject[oldKey];

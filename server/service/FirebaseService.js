@@ -13,6 +13,7 @@ export default class FirebaseService {
       );
     } catch (err) {
       debugger;
+      console.log("error initializing config:", err);
       return false;
     }
 
