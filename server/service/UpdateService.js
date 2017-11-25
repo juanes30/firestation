@@ -1,4 +1,5 @@
 import admin from "firebase-admin";
+import StringHelper from "../../app/helpers/StringHelper";
 
 export default class UpdateService {
   static updateFields(db, path, object, fields) {
@@ -70,13 +71,13 @@ export default class UpdateService {
 
   static deleteFirestoreData(db, path) {
     let [collection, doc] = path.split(/\/(.+)/); //splits on first "/"
-    console.log("delete, col: " + collection + "\n doc: " + doc);
     doc.includes("/")
       ? this.deleteFirestoreField(db, collection, doc)
       : this.deleteFirestoreDoc(db, collection, doc);
   }
 
   static deleteFirestoreDoc(db, collection, doc) {
+    console.log(`delete, col: ${collection}\ndoc: ${doc}`);
     db
       .collection(collection)
       .doc(doc)
@@ -91,7 +92,7 @@ export default class UpdateService {
 
   static deleteFirestoreField(db, collection, docAndField) {
     let [doc, field] = docAndField.split(/\/(.+)/);
-    console.log(`deleting field ${field} from doc: ${doc}`);
+    console.log(`deleting field, ${field} from col:${collection}, doc: ${doc}`);
     db
       .collection(collection)
       .doc(doc)
@@ -101,10 +102,73 @@ export default class UpdateService {
   }
 
   static pushObject(db, path, object) {
-    db.ref(path).push(object);
+    db.api && db.api.Firestore
+      ? this.createFirestoreDocument(db, path, object)
+      : db.ref(path).push(object);
   }
 
-  static set(db, path, object) {
-    db.ref(path).set(object);
+  static createFirestoreDocument(db, path, data) {
+    let [collection, docId] = path.split(/\/(.+)/);
+    docId
+      ? this.setFirestoreDocWithExplicitId(db, collection, docId, data)
+      : this.pushFirestoreDocToGeneratedId(db, collection, data);
+  }
+
+  static setFirestoreDocWithExplicitId(db, collection, docId, data) {
+    console.log(
+      `setting doc ${docId} in collection ${collection}, data:`,
+      data
+    );
+    db
+      .collection(collection)
+      .doc(docId)
+      .set(data);
+  }
+
+  static pushFirestoreDocToGeneratedId(db, collection, data) {
+    collection = collection.replace(/\/+$/, ""); //remove trailing "/"
+    console.log(`pushing to collection ${collection}, data:`, data);
+    db
+      .collection(collection)
+      .add(data)
+      .then(docRef => {
+        console.log("Document written with ID: ", docRef.id);
+      })
+      .catch(error => {
+        console.error("Error adding document: ", error);
+      });
+  }
+
+  static set(db, path, data) {
+    if (db.api && db.api.Firestore) {
+      let [collection, docId] = path.split(/\/(.+)/);
+      docId.includes("/")
+        ? this.setFirestoreProp(db, path, data)
+        : this.setFirestoreDocWithExplicitId(db, collection, docId, data);
+    } else {
+      db.ref(path).set(data);
+    }
+  }
+
+  static setObjectProperty(db, path, value) {
+    value = StringHelper.getParsedValue(value);
+    if (db.api && db.api.Firestore) {
+      this.setFirestoreProp(db, path, value);
+    } else {
+      db.ref(path).set(value);
+    }
+  }
+
+  static setFirestoreProp(db, path, value) {
+    path = StringHelper.replaceAll(path, "/", ".");
+    let [collection, docAndfield] = path.split(/\.(.+)/);
+    let [docId, field] = docAndfield.split(/\.(.+)/);
+    console.log(`setting document prop ${field} @ ${collection}/${docId}`);
+    db
+      .collection(collection)
+      .doc(docId)
+      .update({
+        [field]: value
+      });
   }
 }

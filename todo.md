@@ -10,7 +10,6 @@
 * collapse sidebar
 
 ### Firestore
-* Insert statements
 * display embedded collections when they exist within a document
 
 ### Keymap
@@ -18,7 +17,7 @@
 * allow users to add shortcuts to paste saved queries
 
 ### Workbook
-* fix autocompletion, workbook should learn about common collections/props and use them as suggestions
+* implement autocompletion, workbook should learn about common collections/props and use them as suggestions
 
 ### Query Translator
 * javascript first, then ios or android

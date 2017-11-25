@@ -49,18 +49,10 @@ export default class ObjectNode extends React.Component {
       "warning All data at this location, including nested data, will be permanently deleted: \nData location: " +
       path;
     if (confirm(confirmationMsg)) {
-      let app = FirebaseService.startFirebaseApp(
-        this.props.store.currentDatabase
-      );
-      let db = this.props.store.firestoreEnabled
-        ? app.firestore()
-        : app.database();
-
+      let db = this.props.store.currentDatabaseObject;
       UpdateService.deleteObject(db, path);
     }
   }
-
-  addProperty(path, value) {}
 
   sortByOrderBys(resultsArr) {
     let orderBys = this.props.store.results.orderBys;
@@ -296,9 +288,7 @@ export default class ObjectNode extends React.Component {
 
   handleSubmit(e) {
     e.preventDefault();
-    let db = FirebaseService.startFirebaseApp(
-      this.props.store.currentDatabase
-    ).database();
+    let db = this.props.store.currentDatabaseObject;
     let newValue = StringHelper.getParsedValue(this.state.newVal);
     let path = this.props.fbPath;
     const pathUnderEdit = this.props.pathUnderEdit;
@@ -331,10 +321,8 @@ export default class ObjectNode extends React.Component {
   }
 
   createNewProperty(e) {
-    let db = FirebaseService.startFirebaseApp(
-      this.props.store.currentDatabase
-    ).database();
-    UpdateService.set(
+    let db = this.props.store.currentDatabaseObject;
+    UpdateService.setObjectProperty(
       db,
       this.props.creationPath + "/" + this.state.newKey,
       this.state.newVal

@@ -1,4 +1,4 @@
-import { observable } from "mobx";
+import { observable, computed } from "mobx";
 import CacheHelper from "../helpers/CacheHelper";
 const FirebaseService = require("electron").remote.require(
   "./server/service/FirebaseService"
@@ -224,6 +224,12 @@ class Store {
           "insert into users (name, level, email) values ('Joe', 99, 'joe@gmail.com');"
       }
     ];
+  }
+
+  @computed
+  get currentDatabaseObject() {
+    let app = FirebaseService.startFirebaseApp(this.currentDatabase);
+    return this.firestoreEnabled ? app.firestore() : app.database();
   }
 }
 
