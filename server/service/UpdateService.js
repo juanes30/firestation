@@ -63,7 +63,41 @@ export default class UpdateService {
   }
 
   static deleteObject(db, path) {
-    db.ref(path).remove();
+    db.api && db.api.Firestore
+      ? this.deleteFirestoreData(db, path)
+      : db.ref(path).remove();
+  }
+
+  static deleteFirestoreData(db, path) {
+    let [collection, doc] = path.split(/\/(.+)/); //splits on first "/"
+    console.log("delete, col: " + collection + "\n doc: " + doc);
+    doc.includes("/")
+      ? this.deleteFirestoreField(db, collection, doc)
+      : this.deleteFirestoreDoc(db, collection, doc);
+  }
+
+  static deleteFirestoreDoc(db, collection, doc) {
+    db
+      .collection(collection)
+      .doc(doc)
+      .delete()
+      .then(function() {
+        console.log("Document successfully deleted!");
+      })
+      .catch(function(error) {
+        console.error("Error removing document: ", error);
+      });
+  }
+
+  static deleteFirestoreField(db, collection, docAndField) {
+    let [doc, field] = docAndField.split(/\/(.+)/);
+    console.log(`deleting field ${field} from doc: ${doc}`);
+    db
+      .collection(collection)
+      .doc(doc)
+      .update({
+        [field]: admin.firestore.FieldValue.delete()
+      });
   }
 
   static pushObject(db, path, object) {

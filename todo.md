@@ -11,7 +11,6 @@
 
 ### Firestore
 * Insert statements
-* Delete statements
 * display embedded collections when they exist within a document
 
 ### Keymap

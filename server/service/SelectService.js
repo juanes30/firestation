@@ -85,7 +85,6 @@ export default class SelectService {
         querySnapshot.forEach(function(doc) {
           results.payload[doc.id] = doc.data();
         });
-        console.log("entire collection: ", results.payload);
         return callback(results);
       });
   }

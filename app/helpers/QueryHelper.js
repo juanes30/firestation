@@ -1,3 +1,4 @@
+import _ from "lodash";
 import StringHelper from "./StringHelper";
 const services = "./server/service/";
 const remote = require("electron").remote;
@@ -12,7 +13,6 @@ const INSERT_STATEMENT = "INSERT_STATEMENT";
 const DELETE_STATEMENT = "DELETE_STATEMENT";
 const FIRESTATION_DATA_PROP = "FIRESTATION_DATA_PROP";
 const EQUATION_IDENTIFIERS = [" / ", " + ", " - ", " * "];
-import _ from "lodash";
 
 export default class QueryHelper {
   static getRootKeysPromise(database) {
