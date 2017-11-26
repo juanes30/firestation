@@ -5,12 +5,14 @@
 
 ## Features
 ### General
+* delete a firestation db
 * error messages on bad query syntax   
 * build commits into history, allow user to revert back to previous data
 * collapse sidebar
 
 ### Firestore
 * display embedded collections when they exist within a document
+* embedded docs should have an expand btn, that fetches data when clicked
 
 ### Keymap
 * give shortcuts preview (ctrl+enter --> execute query, etc)
