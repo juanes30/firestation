@@ -63,7 +63,7 @@ export default class App extends Component {
           this.props.store.addNewListener(results.firebaseListener);
           this.props.store.executingQuery = false;
           this.props.store.results = null; //updating object props alone won't work w/mobx objects, need to reset to trigger observables
-          this.props.store.results = results;   
+          this.props.store.results = results;
           if (results && results.statementType != "SELECT_STATEMENT") {
             this.props.store.commitQuery = query;
           }
@@ -96,7 +96,7 @@ export default class App extends Component {
       );
     } catch (error) {
       debugger;
-      console.log(error);
+      console.log("executeQuery err: ", error);
       this.props.store.results = { error };
     }
   };
@@ -114,26 +114,28 @@ export default class App extends Component {
           ]
         : null;
 
+    const store = this.props.store;
+
     const props = {
       cancelCommit: this.cancelCommit,
       createDb: this.createDb,
       commit: this.commit,
       executeQuery: this.executeQuery,
-      results: this.props.store.results,
-      newDb: this.props.store.newDb,
+      results: store.results,
+      newDb: store.newDb,
       savedQueries: savedQueries,
       setCurrentDb: this.setCurrentDb,
       startFirebaseForDb: this.startFirebaseForDb,
-      store: this.props.store,
-      firestoreEnabled: this.props.store.firestoreEnabled,
+      store: store,
+      firestoreEnabled: store.firestoreEnabled,
       updateSavedQueries: this.updateSavedQueries
     };
 
     return (
       <div className="App">
         <Navbar {...props} />
-        {this.props.store.modal && <Modal {...props} />}
-        <Workstation {...props} />
+        {store.modal && <Modal {...props} />}
+        {store.currentDatabase && <Workstation {...props} />}
       </div>
     );
   }

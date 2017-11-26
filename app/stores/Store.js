@@ -8,8 +8,7 @@ class Store {
   @observable databases = CacheHelper.getFromLocalStore("databases");
   databases = this.databases ? this.databases : [];
   @observable firestoreEnabled = false;
-  @observable
-  currentDatabase = CacheHelper.getFromLocalStore("currentDatabase");
+  @observable currentDatabase = null;
   @observable rootKeys = null;
   @observable
   savedQueriesByDb = CacheHelper.getFromLocalStore("savedQueriesByDb");
@@ -32,7 +31,10 @@ class Store {
   //Workbook
   @observable focus = false;
   @observable selectedText = "";
-  constructor() {}
+  constructor() {
+    let currentDb = CacheHelper.getFromLocalStore("currentDatabase");
+    this.setCurrentDatabase(currentDb);
+  }
 
   appendQuery(text) {
     const query = this.query ? this.query + "\n" + text : text;
@@ -107,9 +109,13 @@ class Store {
   };
 
   setCurrentDatabase(database) {
+    if (!database) {
+      this.modal = "newDB";
+    } else {
+      this.firestoreEnabled = database.firestoreEnabled;
+    }
     this.currentDatabase = database;
     this.queryHistoryIsOpen = false;
-    this.firestoreEnabled = database.firestoreEnabled;
     this.query = "";
     this.clearResults();
     CacheHelper.updateLocalStore("currentDatabase", database);
@@ -126,22 +132,27 @@ class Store {
     this.currentDatabase = database;
     CacheHelper.updateLocalStore("databases", databases);
     CacheHelper.updateLocalStore("currentDatabase", database);
-    let exampleQueries = this.getExampleQueries();
-    exampleQueries.forEach(q => {
-      this.saveQuery(q);
-    });
+
+    if (!this.savedQueriesByDb || !this.savedQueriesByDb[database.url]) {
+      let exampleQueries = this.getExampleQueries();
+      exampleQueries.forEach(q => {
+        this.saveQuery(q);
+      });
+    }
   }
 
   deleteCurrentDatabase() {
     this.databases = this.databases.filter(db => {
       return (
-        db.serviceKey.project_id === this.currentDatabase.serviceKey.project_id
+        db.serviceKey.project_id !== this.currentDatabase.serviceKey.project_id
       );
     });
-    CacheHelper.updateLocalStore("databases", this.databases);
-    CacheHelper.updateLocalStore("currentDatabase", null);
 
-    this.currentDatabase = null;
+    CacheHelper.updateLocalStore("databases", this.databases);
+    this.setCurrentDatabase(
+      this.databases.length > 0 ? this.databases[0] : null
+    );
+    FirebaseService.killFirebaseApps();
   }
 
   updateDatabase(database) {

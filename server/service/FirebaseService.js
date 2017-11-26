@@ -41,4 +41,10 @@ export default class FirebaseService {
       db.url
     );
   }
+
+  static killFirebaseApps(db) {
+    admin.apps.forEach(app => {
+      app.delete();
+    });
+  }
 }

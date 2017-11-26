@@ -1,8 +1,10 @@
 import React from "react";
+import ReactTooltip from "react-tooltip";
+import { inject, observer } from "mobx-react";
+
 const FirebaseService = require("electron").remote.require(
   "./server/service/FirebaseService"
 );
-import { inject, observer } from "mobx-react";
 
 const DatabaseConfig = ({
   store,
@@ -51,8 +53,10 @@ const DatabaseConfig = ({
   };
 
   const confirmDelete = () => {
-    // let confirm = confirm("Are you sure you want to delete this database?");
-    if (true) {
+    const confirmationMsg =
+      "Are you sure you want to remove this database from Firestation?\n\nYour Firebase DB will be unaffected.";
+    if (confirm(confirmationMsg)) {
+      store.modal = null;      
       store.deleteCurrentDatabase();
     }
   };
@@ -61,9 +65,7 @@ const DatabaseConfig = ({
     <div className="DatabaseConfig">
       <div className="col-md-auto">
         <h2>DB: {currentDatabase.title}</h2>
-        <button onClick={confirmDelete} className="bt sm red">
-          Delete
-        </button>
+
         <br />
         <div className="nameEdit">
           <h4>Name:</h4>
@@ -79,21 +81,23 @@ const DatabaseConfig = ({
           <button onClick={handleFile} className="bt white">
             <i className="fa fa-file-text-o" /> New Key
           </button>
-          {store.newDb && store.newDb.path
-            ? <div>
-                New Service Account:{" "}
-                <span className="detailText">
-                  <br />
-                  {store.newDb.path}
-                </span>
-              </div>
-            : <div>
-                Current Service Account:{" "}
-                <span className="detailText">
-                  <br />
-                  {currentDatabase.path}
-                </span>
-              </div>}
+          {store.newDb && store.newDb.path ? (
+            <div>
+              New Service Account:{" "}
+              <span className="detailText">
+                <br />
+                {store.newDb.path}
+              </span>
+            </div>
+          ) : (
+            <div>
+              Current Service Account:{" "}
+              <span className="detailText">
+                <br />
+                {currentDatabase.path}
+              </span>
+            </div>
+          )}
         </div>
         <div className="firestore-toggle">
           <label className="switch">
@@ -113,6 +117,22 @@ const DatabaseConfig = ({
         <button className="bt red" onClick={closeModal}>
           Cancel
         </button>
+        <button
+          className="bt white sm delete-db-btn"
+          onClick={confirmDelete}
+          data-tip
+          data-for="removeDbTooltip"
+        >
+          <i className="fa fa-trash" aria-hidden="true" />
+        </button>
+        <ReactTooltip
+          id="removeDbTooltip"
+          type="dark"
+          effect="solid"
+          place="top"
+        >
+          <span>Remove DB</span>
+        </ReactTooltip>
         <span className="switch-container" />
       </div>
     </div>
