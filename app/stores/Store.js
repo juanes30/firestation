@@ -1,5 +1,6 @@
 import { observable, computed } from "mobx";
 import CacheHelper from "../helpers/CacheHelper";
+import { debug } from "util";
 const FirebaseService = require("electron").remote.require(
   "./server/service/FirebaseService"
 );
@@ -90,19 +91,22 @@ class Store {
   }
 
   addNewListener = listener => {
+    if (!listener) {
+      debugger;
+      return;
+    }
+
     this[
-      this.currentDatabase.firestoreEnabled
-        ? "firestoreListeners"
-        : "firebaseListeners"
+      listener.type === "realtime" ? "firebaseListeners" : "firestoreListeners"
     ].push(listener);
   };
 
   killListeners = () => {
-    this.firebaseListeners.forEach(ref => {
-      ref && ref.off("value");
+    this.firebaseListeners.forEach(listener => {
+      listener && listener.unsubscribe();
     });
-    this.firestoreListeners.forEach(unsubscribe => {
-      unsubscribe && unsubscribe();
+    this.firestoreListeners.forEach(listener => {
+      listener && listener.unsubscribe();
     });
     this.firebaseListeners = [];
     this.firestoreListeners = [];

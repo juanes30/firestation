@@ -5,6 +5,8 @@
 
 ## Features
 ### General
+* allow users to reference firestore/realtime from the other db, 
+    example, from firestore db: insert into users (select * from realtime.users);
 * delete a firestation db
 * error messages on bad query syntax   
 * build commits into history, allow user to revert back to previous data

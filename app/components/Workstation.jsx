@@ -7,6 +7,8 @@ import SideMenu from "./SideMenu";
 import QueryHistory from "./QueryHistory";
 import QueryResults from "./QueryResults";
 import ButtonRow from "./ButtonRow";
+// import FirestoreIcon from '../assets/images/firestore_icon.png';
+// import RealtimeIcon from '../assets/images/realtime_icon.png';
 
 @observer
 export default class Workstation extends Component {
@@ -85,12 +87,29 @@ export default class Workstation extends Component {
           {...props}
         />
         <div className="workArea col-md-12">
-          <h1 className="workstation-dbTitle">
-            {store.currentDatabase.title}{" "}
-            {store.firestoreEnabled
-              ? "- Cloud Firestore"
-              : "- Realtime Database"}
-          </h1>
+          <div className="workstation-header">
+            <div className="workstation-dbTitle">
+              {store.currentDatabase.title}{" "}
+            </div>
+            <div className="dropdown">
+              <a
+                className="nav-link dropdown-toggle"
+                id="navbarDropdownMenuLink"
+                data-toggle="dropdown"
+                aria-haspopup="true"
+                aria-expanded="false"
+              >
+                {store.firestoreEnabled
+                  ? "Cloud Firestore"
+                  : "Realtime Database"}
+              </a>
+              {/* <img src={RealtimeIcon}/> */}
+              <div className="dropdown-menu">
+                {<a className="dropdown-item">Realtime Database</a>}
+                {<a className="dropdown-item">Cloud Firestore</a>}
+              </div>
+            </div>
+          </div>
           {/*{store.rootKeys &&
           <div>Root Keys: <ObjectTree value={store.rootKeys} 
           level={0} noValue={true} /><br /></div>}*/}
@@ -111,15 +130,19 @@ export default class Workstation extends Component {
             }
           >
             {store.results &&
-              store.results.error &&
-              <h4 className="queryError">
-                {store.results.error}
-              </h4>}
+              store.results.error && (
+                <h4 className="queryError">
+                  {store.results.error.message || store.results.error}
+                  <br/>
+                  {store.results.error.stack}
+                  
+                </h4>
+              )}
             {store.results &&
-              payloadSize !== undefined &&
-              <QueryResults {...props} />}
-            {store.queryHistoryIsOpen &&
-              <QueryHistory history={store.getQueryHistory()} {...props} />}
+              payloadSize !== undefined && <QueryResults {...props} />}
+            {store.queryHistoryIsOpen && (
+              <QueryHistory history={store.getQueryHistory()} {...props} />
+            )}
           </div>
         </div>
       </div>

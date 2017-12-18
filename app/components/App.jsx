@@ -70,6 +70,7 @@ export default class App extends Component {
         }
       );
     } catch (error) {
+      debugger;
       this.props.store.results = { error };
       this.props.store.executingQuery = false;
     }

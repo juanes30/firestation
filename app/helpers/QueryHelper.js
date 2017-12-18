@@ -6,6 +6,7 @@ const SelectService = remote.require(`${services}SelectService`);
 const FirebaseService = remote.require(`${services}FirebaseService`);
 const UpdateService = remote.require(`${services}UpdateService`);
 import { isValidDate, executeDateComparison } from "../helpers/DateHelper";
+import { debug } from "util";
 const NO_EQUALITY_STATEMENTS = "NO_EQUALITY_STATEMENTS";
 const SELECT_STATEMENT = "SELECT_STATEMENT";
 const UPDATE_STATEMENT = "UPDATE_STATEMENT";
@@ -28,10 +29,7 @@ export default class QueryHelper {
     });
   }
 
-  static executeQuery(query, database, callback, commitResults) {
-    let app = FirebaseService.startFirebaseApp(database);
-    let db = database.firestoreEnabled ? app.firestore() : app.database();
-
+  static executeQuery(query, db, callback, commitResults) {
     //maybe delete these two lines, but i think it may do something important..
     //cant remember.. >.<, all listeners should already be killed on App.executeQuery()
     // let ref = db.ref("/");
@@ -53,6 +51,7 @@ export default class QueryHelper {
     //called by App.jsx to remove comments before saving to history
     query = StringHelper.replaceAll(query, /(\/\/|--).+/, "");
     query = query.replace(/\r?\n|\r/g, " ");
+    query = query.trim();
     return query;
   }
 
@@ -276,7 +275,7 @@ export default class QueryHelper {
           .substring(eqCompAndIndex.index + eqCompAndIndex.comparator.length)
           .trim()
       );
-      const isFirestore = db.api && db.api.Firestore;
+      const isFirestore =  db.firestoreEnabled;
       if (
         typeof val === "string" &&
         val.charAt(0) === "(" &&
@@ -419,7 +418,6 @@ export default class QueryHelper {
         .trim();
       const selectedFields = this.getSelectedFields(selectStatement);
       const collection = this.getCollection(selectStatement, SELECT_STATEMENT);
-
       this.getWheres(selectStatement, db, wheres => {
         SelectService.getDataForSelect(
           db,
@@ -429,6 +427,8 @@ export default class QueryHelper {
           shouldApplyListener,
           null,
           selectData => {
+            // console.log()
+
             return callback(selectData.payload);
           }
         );

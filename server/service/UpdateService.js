@@ -1,15 +1,23 @@
 import admin from "firebase-admin";
 import StringHelper from "../../app/helpers/StringHelper";
+import FirebaseService from "./FirebaseService";
 
 export default class UpdateService {
-  static updateFields(db, path, object, fields) {
+  static updateFields(savedDatabase, path, object, fields) {
     if (!fields || !object) {
       return;
     }
-    const isFirestore = db.api && db.api.Firestore;
-    return isFirestore
-      ? this.updateFirestoreFields(...arguments)
-      : this.updateRealtimeFields(...arguments);
+
+    console.log("insertData: ",object);
+    console.log("path:",path);
+    console.log("fields:",fields);
+    console.log("\n\n")
+
+    const app = FirebaseService.startFirebaseApp(savedDatabase);
+    const db = savedDatabase.firestoreEnabled ? app.firestore() : app.database();
+    return savedDatabase.firestoreEnabled
+      ? this.updateFirestoreFields(db, path, object, fields)
+      : this.updateRealtimeFields(db, path, object, fields);
   }
 
   static updateRealtimeFields(db, path, object, fields) {
@@ -63,8 +71,10 @@ export default class UpdateService {
     return updateObject;
   }
 
-  static deleteObject(db, path) {
-    db.api && db.api.Firestore
+  static deleteObject(savedDatabase, path) {
+    const app = FirebaseService.startFirebaseApp(savedDatabase);
+    const db = savedDatabase.firestoreEnabled ? app.firestore() : app.database();
+    savedDatabase.firestoreEnabled
       ? this.deleteFirestoreData(db, path)
       : db.ref(path).remove();
   }
@@ -101,8 +111,10 @@ export default class UpdateService {
       });
   }
 
-  static pushObject(db, path, object) {
-    db.api && db.api.Firestore
+  static pushObject(savedDatabase, path, object) {
+    const app = FirebaseService.startFirebaseApp(savedDatabase);
+    const db = savedDatabase.firestoreEnabled ? app.firestore() : app.database();
+    savedDatabase.firestoreEnabled
       ? this.createFirestoreDocument(db, path, object)
       : db.ref(path).push(object);
   }

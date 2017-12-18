@@ -4,10 +4,11 @@ import {
   isValidDate,
   executeDateComparison
 } from "../../app/helpers/DateHelper";
+import FirebaseService from "./FirebaseService";
 
 export default class SelectService {
   static getDataForSelect(
-    db,
+    databaseSavedData,
     collection,
     selectedFields,
     wheres,
@@ -21,7 +22,17 @@ export default class SelectService {
       selectedFields,
       wheres
     );
-    const isFirestore = db.api && db.api.Firestore;
+
+    let isFirestore = databaseSavedData.firestoreEnabled;
+    if (/(db|firestore)\//i.test(collection)) {
+      console.log("passed regex");
+      isFirestore = !isFirestore;
+      collection = collection.substring(collection.indexOf("/") + 1);
+    }
+    console.log("collection after:", collection);
+
+    const app = FirebaseService.startFirebaseApp(databaseSavedData);
+    let db = isFirestore ? app.firestore() : app.database();
 
     //TODO: reimplement listeners, using firestore listeners as well
     let results = {
@@ -61,9 +72,9 @@ export default class SelectService {
     } else {
       //filterable query
       if (isFirestore) {
-        this.executeFilteredFirestoreQuery(results, ...arguments);
+        this.executeFilteredFirestoreQuery(results, db,...arguments);
       } else {
-        this.executeFilteredRealtimeQuery(results, ...arguments);
+        this.executeFilteredRealtimeQuery(results, db, ...arguments);
       }
     }
   }
@@ -77,6 +88,7 @@ export default class SelectService {
     callback
   ) {
     console.log("NON_FILTERABLE_FIRESTORE_QUERY");
+
     //TODO: figure out a way to make this a listener
     db
       .collection(collection)
@@ -104,6 +116,8 @@ export default class SelectService {
     callback
   ) {
     console.log("NON_FILTERED_REALTIME_QUERY");
+    console.log("collection:", collection);
+
     let ref = db.ref(collection);
     ref[shouldApplyListener ? "on" : "once"]("value", snapshot => {
       results.payload = snapshot.val();
@@ -113,7 +127,10 @@ export default class SelectService {
           selectedFields
         );
       }
-      results.firebaseListener = ref;
+      results.firebaseListener = {
+        unsubscribe: ()=>ref.off("value"),
+        type: "realtime"
+      };
       return callback(results);
     });
   }
@@ -121,6 +138,7 @@ export default class SelectService {
   static executeFilteredFirestoreQuery(
     results,
     db,
+    databaseSavedData,
     collection,
     selectedFields,
     wheres,
@@ -130,8 +148,7 @@ export default class SelectService {
   ) {
     console.log("FILTERED_FIRESTORE");
     const mainWhere = wheres[0];
-
-    db
+    let unsub = db
       .collection(collection)
       .where(mainWhere.field, mainWhere.comparator, mainWhere.value)
       .onSnapshot(snapshot => {
@@ -146,6 +163,13 @@ export default class SelectService {
         );
 
         results.payload = payload;
+        results.firebaseListener = {
+          type: "firestore",
+          unsubscribe: ()=> unsub()
+        };
+
+        // console.log("onSnap:", onSnap);
+
         callback(results);
       });
   }
@@ -153,6 +177,7 @@ export default class SelectService {
   static executeFilteredRealtimeQuery(
     results,
     db,
+    databaseSavedData,    
     collection,
     selectedFields,
     wheres,
@@ -174,8 +199,10 @@ export default class SelectService {
           selectedFields
         );
         console.log("select results: ", results);
-        results.firebaseListener = ref;
-
+        results.firebaseListener = {
+          unsubscribe: ()=>ref.off("value"),
+          type: "realtime"
+        };
         return callback(results);
       });
   }
