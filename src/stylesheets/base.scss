@@ -1,4 +1,4 @@
-@import "~bootstrap/scss/bootstrap";
+@import '~bootstrap/scss/bootstrap';
 $gray: #aaa;
 $break-small: 800px;
 $break-large: 1300px;
@@ -36,7 +36,7 @@ $turq: #0fb8ad;
 $turqhover: #1fc8db;
 #root {
   //using # to override bootstrap
-  font-family: "Roboto", "Helvetica Neue, Helvetica, Arial", sans-serif;
+  font-family: 'Roboto', 'Helvetica Neue, Helvetica, Arial', sans-serif;
 }
 
 body {
@@ -383,7 +383,7 @@ h4 {
     color: white;
   }
 
-  background: linear-gradient(141deg, #f4c242 0%, #e2c743 51%, #e2a844 75%);
+  background: linear-gradient(141deg, #5F6368 0%, #595959 51%, #5F6368 75%);
   li {
     color: white !important;
   }
@@ -475,7 +475,7 @@ i.fa-times {
 }
 
 .bt:before {
-  content: "";
+  content: '';
   display: block;
   width: 0;
   padding-top: 0;
@@ -575,11 +575,11 @@ i.fa-times {
         font-style: normal;
         border: 1px dotted #aaa;
         &:before {
-          content: "+";
+          content: '+';
         }
         &.opened {
           &:before {
-            content: "-";
+            content: '-';
           }
         }
       }
@@ -700,7 +700,7 @@ i.fa-times {
 
 .slider:before {
   position: absolute;
-  content: "";
+  content: '';
   height: 13px;
   width: 13px;
   left: 4px;
